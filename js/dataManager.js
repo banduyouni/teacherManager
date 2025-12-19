@@ -6,25 +6,14 @@ class DataManager {
 
     // 初始化数据
     initializeData() {
-        // 优先从本地存储读取数据，实现持久化
-        const localData = localStorage.getItem('teachManagerData');
-        if (localData) {
-            try {
-                this.data = JSON.parse(localData);
-                // 数据结构校验（可选）
-                if (!this.data.users || !Array.isArray(this.data.users)) {
-                    throw new Error('数据结构不完整，重新生成');
-                }
-                console.log('从本地存储加载数据:', this.data);
-                return;
-            } catch (e) {
-                console.warn('本地存储数据损坏，重新生成 mock 数据');
-            }
+         const savedData = this.loadData();
+        if (savedData) {
+            this.data = savedData; // 使用本地数据
+            this.ensureDataCompatibility(); // 兼容性检查
+        } else {
+            this.data = this.generateMockData(); // 首次生成
+            this.saveData();
         }
-        // 本地无数据或数据损坏，生成 mock 数据
-        this.data = this.generateMockData();
-        console.log('初始化 mock 数据:', this.data);
-        this.saveData();
     }
 
     // 生成模拟数据
@@ -152,9 +141,9 @@ class DataManager {
                 // 系统管理员
                 {
                     id: 'sys001',
-                    username: 'admin',
-                    password: this.hashPassword('admin123', 'sysadmin'),
-                    salt: 'sysadmin',
+                    username: 'sysadmin',
+                    password: this.hashPassword('admin123', 'sys001'),
+                    salt: 'sys001',
                     name: '张系统',
                     userType: 'systemAdmin',
                     email: 'zhang.admin@university.edu.cn',
@@ -218,19 +207,6 @@ class DataManager {
             ],
             courses: [
                 {
-                    id: 'course001',
-                    courseCode: 'CS101',
-                    courseName: '数据结构',
-                    credits: 3,
-                    teacherId: 't001',
-                    departmentId: 'd001',
-                    description: '学习基本的数据结构和算法，包括数组、链表、栈、队列、树、图等',
-                    maxStudents: 50,
-                    currentStudents: 35,
-                    category: 'required',
-                    status: 'published'
-                },
-                {
                     id: 'course002',
                     courseCode: 'CS102',
                     courseName: '计算机网络',
@@ -285,115 +261,26 @@ class DataManager {
             ],
             enrollments: [
                 {
-                    id: 'en001',
-                    studentId: 's001',
-                    courseId: 'course001',
-                    enrollmentTime: '2024-09-01T00:00:00Z',
-                    status: 'active'
-                },
-                {
                     id: 'en002',
                     studentId: 's001',
                     courseId: 'course002',
                     enrollmentTime: '2024-09-01T00:00:00Z',
-                    status: 'active'
-                },
-                {
-                    id: 'en003',
-                    studentId: 's002',
-                    courseId: 'course001',
-                    enrollmentTime: '2024-09-01T00:00:00Z',
-                    status: 'active'
+                    status: 'active',
+                    type: 'enrolled' // 正式选修
                 },
                 {
                     id: 'en004',
                     studentId: 's003',
                     courseId: 'course003',
                     enrollmentTime: '2024-09-01T00:00:00Z',
-                    status: 'active'
+                    status: 'active',
+                    type: 'enrolled' // 正式选修
                 }
             ],
-            assignments: [
-                {
-                    id: 'assign001',
-                    courseId: 'course001',
-                    title: '第一次作业：线性表实现',
-                    description: '实现单链表和双链表的基本操作',
-                    type: 'assignment',
-                    maxScore: 100,
-                    startTime: '2024-10-01T00:00:00Z',
-                    endTime: '2024-10-15T23:59:59Z',
-                    status: 'published'
-                },
-                {
-                    id: 'assign002',
-                    courseId: 'course001',
-                    title: '期中考试',
-                    description: '数据结构期中考试',
-                    type: 'exam',
-                    maxScore: 100,
-                    startTime: '2024-11-01T14:00:00Z',
-                    endTime: '2024-11-01T16:00:00Z',
-                    status: 'published'
-                }
-            ],
-            submissions: [
-                {
-                    id: 'sub001',
-                    assignmentId: 'assign001',
-                    studentId: 's001',
-                    submittedTime: '2024-10-12T10:30:00Z',
-                    score: 85,
-                    feedback: '代码实现正确，逻辑清晰',
-                    status: 'graded'
-                },
-                {
-                    id: 'sub002',
-                    assignmentId: 'assign001',
-                    studentId: 's002',
-                    submittedTime: '2024-10-13T15:20:00Z',
-                    score: 92,
-                    feedback: '实现优秀，考虑了各种边界情况',
-                    status: 'graded'
-                }
-            ],
-            grades: [
-                {
-                    id: 'grade001',
-                    studentId: 's001',
-                    courseId: 'course001',
-                    assignmentScores: [
-                        { assignmentId: 'assign001', score: 85, weight: 0.3 }
-                    ],
-                    examScores: [
-                        { assignmentId: 'assign002', score: 88, weight: 0.7 }
-                    ],
-                    totalScore: 87.1,
-                    gpa: 3.7,
-                    semester: '2024-1',
-                    status: 'published'
-                }
-            ],
-            materials: [
-                {
-                    id: 'mat001',
-                    courseId: 'course001',
-                    title: '数据结构课件第1章',
-                    type: 'document',
-                    filePath: '/materials/course001/chapter1.pdf',
-                    uploadTime: '2024-09-15T10:00:00Z',
-                    size: '2.5MB'
-                },
-                {
-                    id: 'mat002',
-                    courseId: 'course001',
-                    title: '数据结构实验指导',
-                    type: 'document',
-                    filePath: '/materials/course001/lab_guide.pdf',
-                    uploadTime: '2024-09-16T14:30:00Z',
-                    size: '1.8MB'
-                }
-            ],
+            assignments: [],
+            submissions: [],
+            grades: [],
+            materials: [],
             logs: [],
             backups: [],
             settings: {
@@ -412,21 +299,100 @@ class DataManager {
         };
     }
 
-    // 哈希密码
+    // 哈希密码 - 改进的哈希算法
     hashPassword(password, salt) {
+        // 使用多次迭代的改进哈希算法
         let hash = 0;
-        const str = password + salt;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
+        const combined = password + salt + 'teachManager2024';
+        
+        for (let iteration = 0; iteration < 1000; iteration++) {
+            const str = combined + iteration;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char + iteration;
+                hash = hash & hash;
+            }
         }
-        return hash.toString(16);
+        
+        // 添加校验位提高安全性
+        const checkDigit = (hash % 1000).toString().padStart(3, '0');
+        return Math.abs(hash).toString(16) + checkDigit;
+    }
+
+    // 从本地存储加载数据
+    loadData() {
+        try {
+            const savedData = localStorage.getItem('teachManagerData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                // 验证数据完整性
+                if (parsedData && typeof parsedData === 'object' && parsedData.users) {
+                    return parsedData;
+                }
+            }
+        } catch (error) {
+            console.error('加载本地数据失败:', error);
+        }
+        return null;
+    }
+
+    // 确保数据兼容性（版本升级时使用）
+    ensureDataCompatibility() {
+        // 检查必要字段是否存在
+        if (!this.data.users) this.data.users = [];
+        if (!this.data.courses) this.data.courses = [];
+        if (!this.data.enrollments) this.data.enrollments = [];
+        if (!this.data.assignments) this.data.assignments = [];
+        if (!this.data.submissions) this.data.submissions = [];
+        if (!this.data.grades) this.data.grades = [];
+        if (!this.data.departments) this.data.departments = [];
+        if (!this.data.classes) this.data.classes = [];
+        if (!this.data.materials) this.data.materials = [];
+        if (!this.data.logs) this.data.logs = [];
+        if (!this.data.backups) this.data.backups = [];
+        if (!this.data.settings) {
+            this.data.settings = {
+                systemName: '成绩管理教学平台',
+                version: '2.0.1',
+                adminEmail: 'admin@university.edu.cn',
+                maxLoginAttempts: 5,
+                sessionTimeout: 120,
+                passwordPolicy: {
+                    minLength: 6,
+                    requireUppercase: false,
+                    requireNumbers: true,
+                    requireSpecialChars: false
+                }
+            };
+        }
+        
+        // 为现有用户添加缺失字段
+        this.data.users.forEach(user => {
+            if (!user.requirePasswordChange) user.requirePasswordChange = false;
+            if (!user.status) user.status = 'active';
+        });
+        
+        // 为现有选课记录添加type字段
+        this.data.enrollments.forEach(enrollment => {
+            if (!enrollment.type) enrollment.type = 'enrolled'; // 默认为正式选修
+        });
+        
+        console.log('数据兼容性检查完成');
+        this.saveData();
     }
 
     // 保存数据到本地存储
     saveData() {
-        localStorage.setItem('teachManagerData', JSON.stringify(this.data));
+        try {
+            localStorage.setItem('teachManagerData', JSON.stringify(this.data));
+            console.log('数据已保存到本地存储');
+        } catch (error) {
+            console.error('保存数据到本地存储失败:', error);
+            // 处理存储空间不足的情况
+            if (error.name === 'QuotaExceededError') {
+                alert('本地存储空间不足，请清理浏览器数据');
+            }
+        }
     }
 
     // 获取数据
@@ -510,30 +476,41 @@ class DataManager {
 
     // 搜索课程
     searchCourses(searchTerm) {
-        const courses = this.data.courses;
-        return courses.filter(course => {
-            const searchLower = searchTerm.toLowerCase();
+        if (!searchTerm || typeof searchTerm !== 'string') {
+            return this.data.courses;
+        }
+        
+        const searchLower = searchTerm.toLowerCase().trim();
+        return this.data.courses.filter(course => {
             return (
-                course.courseName.toLowerCase().includes(searchLower) ||
-                course.courseCode.toLowerCase().includes(searchLower) ||
-                course.description.toLowerCase().includes(searchLower)
+                (course.courseName && course.courseName.toLowerCase().includes(searchLower)) ||
+                (course.courseCode && course.courseCode.toLowerCase().includes(searchLower)) ||
+                (course.description && course.description.toLowerCase().includes(searchLower))
             );
         });
     }
 
     // 搜索用户
     searchUsers(searchTerm, userType = null) {
+        if (!searchTerm || typeof searchTerm !== 'string') {
+            let users = this.data.users;
+            if (userType) {
+                users = users.filter(user => user.userType === userType);
+            }
+            return users;
+        }
+        
         let users = this.data.users;
         if (userType) {
             users = users.filter(user => user.userType === userType);
         }
         
+        const searchLower = searchTerm.toLowerCase().trim();
         return users.filter(user => {
-            const searchLower = searchTerm.toLowerCase();
             return (
-                user.name.toLowerCase().includes(searchLower) ||
-                user.username.toLowerCase().includes(searchLower) ||
-                user.email.toLowerCase().includes(searchLower)
+                (user.name && user.name.toLowerCase().includes(searchLower)) ||
+                (user.username && user.username.toLowerCase().includes(searchLower)) ||
+                (user.email && user.email.toLowerCase().includes(searchLower))
             );
         });
     }

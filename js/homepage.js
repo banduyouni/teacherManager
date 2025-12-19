@@ -103,18 +103,6 @@ function goToSlide(index) {
 function loadCourses() {
     const coursesData = [
         {
-            id: 1,
-            code: 'CS101',
-            title: '数据结构与算法',
-            teacher: '王教授',
-            department: 'cs',
-            credits: 3,
-            type: 'required',
-            description: '学习基本的数据结构和算法，包括数组、链表、树、图等数据结构，以及排序、搜索等算法。',
-            enrolled: 245,
-            rating: 4.8
-        },
-        {
             id: 2,
             code: 'CS201',
             title: '计算机网络',
@@ -301,18 +289,6 @@ function initSearch() {
 function loadFilteredCourses(searchTerm, department, credits, type) {
     // 模拟筛选后的课程数据
     const allCourses = [
-        {
-            id: 1,
-            code: 'CS101',
-            title: '数据结构与算法',
-            teacher: '王教授',
-            department: 'cs',
-            credits: 3,
-            type: 'required',
-            description: '学习基本的数据结构和算法，包括数组、链表、树、图等数据结构，以及排序、搜索等算法。',
-            enrolled: 245,
-            rating: 4.8
-        },
         {
             id: 2,
             code: 'CS201',
