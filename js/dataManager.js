@@ -207,17 +207,34 @@ class DataManager {
             ],
             courses: [
                 {
+                    id: 'course001',
+                    courseCode: 'CS101',
+                    courseName: '数据结构与算法',
+                    credits: 4,
+                    teacherId: 't001',
+                    departmentId: 'd001',
+                    description: '本课程深入讲解数据结构的基本概念、算法设计与分析方法。内容包括线性表、栈、队列、树、图等基本数据结构，以及排序、搜索等核心算法。通过理论学习和实践编程，培养学生分析和解决复杂问题的能力。',
+                    maxStudents: 50,
+                    currentStudents: 38,
+                    category: 'required',
+                    status: 'published',
+                    createdAt: '2024-01-15T08:00:00Z',
+                    updatedAt: '2024-01-20T14:30:00Z'
+                },
+                {
                     id: 'course002',
                     courseCode: 'CS102',
                     courseName: '计算机网络',
                     credits: 3,
                     teacherId: 't002',
                     departmentId: 'd001',
-                    description: '学习计算机网络的基本原理、协议和应用',
+                    description: '学习计算机网络的基本原理、协议和应用。涵盖OSI七层模型、TCP/IP协议栈、网络编程、网络安全等内容。通过实验课程，学生将掌握网络配置、故障排除和应用开发的基本技能。',
                     maxStudents: 40,
-                    currentStudents: 32,
+                    currentStudents: 1,
                     category: 'required',
-                    status: 'published'
+                    status: 'published',
+                    createdAt: '2024-01-10T09:00:00Z',
+                    updatedAt: '2024-01-18T16:20:00Z'
                 },
                 {
                     id: 'course003',
@@ -226,11 +243,13 @@ class DataManager {
                     credits: 4,
                     teacherId: 't003',
                     departmentId: 'd001',
-                    description: '学习操作系统的基本原理和实现技术',
+                    description: '学习操作系统的基本原理和实现技术。包括进程管理、内存管理、文件系统、设备管理等核心概念。通过实际项目，学生将理解操作系统设计的复杂性，并能进行简单的系统级编程。',
                     maxStudents: 45,
                     currentStudents: 28,
                     category: 'required',
-                    status: 'published'
+                    status: 'published',
+                    createdAt: '2024-01-12T10:30:00Z',
+                    updatedAt: '2024-01-22T11:45:00Z'
                 },
                 {
                     id: 'course004',
@@ -239,11 +258,13 @@ class DataManager {
                     credits: 3,
                     teacherId: 't001',
                     departmentId: 'd001',
-                    description: '学习数据库系统的基本原理和设计方法',
+                    description: '学习数据库系统的基本原理和设计方法。内容包括关系模型、SQL语言、数据库设计、事务处理、并发控制等。通过实际案例，学生将掌握数据库应用系统的设计和开发能力。',
                     maxStudents: 40,
                     currentStudents: 25,
                     category: 'elective',
-                    status: 'published'
+                    status: 'published',
+                    createdAt: '2024-01-08T13:15:00Z',
+                    updatedAt: '2024-01-25T15:30:00Z'
                 },
                 {
                     id: 'course005',
@@ -252,33 +273,220 @@ class DataManager {
                     credits: 3,
                     teacherId: 't002',
                     departmentId: 'd001',
-                    description: '学习算法设计的基本方法和分析技术',
+                    description: '学习算法设计的基本方法和分析技术。涵盖贪心算法、动态规划、分治策略、图算法等经典算法。通过大量编程练习，培养学生设计高效算法和分析算法性能的能力。',
                     maxStudents: 35,
                     currentStudents: 20,
                     category: 'elective',
-                    status: 'published'
+                    status: 'published',
+                    createdAt: '2024-01-05T14:00:00Z',
+                    updatedAt: '2024-01-28T09:20:00Z'
+                },
+                {
+                    id: 'course006',
+                    courseCode: 'CS106',
+                    courseName: 'Web开发实战',
+                    credits: 3,
+                    teacherId: 't001',
+                    departmentId: 'd001',
+                    description: '本课程为草稿状态，正在完善中。将涵盖前端开发、后端开发、数据库设计等全栈开发技术，通过实际项目让学生掌握现代Web应用的开发流程。',
+                    maxStudents: 30,
+                    currentStudents: 0,
+                    category: 'practical',
+                    status: 'draft',
+                    createdAt: '2024-01-30T16:45:00Z',
+                    updatedAt: '2024-01-30T16:45:00Z'
                 }
             ],
             enrollments: [
                 {
+                    id: 'en001',
+                    studentId: 's001',
+                    courseId: 'course001',
+                    enrollmentTime: '2024-09-01T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
+                },
+                {
                     id: 'en002',
+                    studentId: 's002',
+                    courseId: 'course001',
+                    enrollmentTime: '2024-09-01T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
+                },
+                {
+                    id: 'en003',
+                    studentId: 's003',
+                    courseId: 'course001',
+                    enrollmentTime: '2024-09-02T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
+                },
+                {
+                    id: 'en004',
                     studentId: 's001',
                     courseId: 'course002',
                     enrollmentTime: '2024-09-01T00:00:00Z',
                     status: 'active',
-                    type: 'enrolled' // 正式选修
+                    type: 'enrolled'
                 },
                 {
-                    id: 'en004',
+                    id: 'en005',
                     studentId: 's003',
                     courseId: 'course003',
                     enrollmentTime: '2024-09-01T00:00:00Z',
                     status: 'active',
-                    type: 'enrolled' // 正式选修
+                    type: 'enrolled'
+                },
+                {
+                    id: 'en006',
+                    studentId: 's002',
+                    courseId: 'course004',
+                    enrollmentTime: '2024-09-03T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
+                },
+                {
+                    id: 'en007',
+                    studentId: 's003',
+                    courseId: 'course004',
+                    enrollmentTime: '2024-09-03T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
+                },
+                {
+                    id: 'en008',
+                    studentId: 's001',
+                    courseId: 'course005',
+                    enrollmentTime: '2024-09-04T00:00:00Z',
+                    status: 'active',
+                    type: 'enrolled'
                 }
             ],
-            assignments: [],
-            submissions: [],
+            assignments: [
+                {
+                    id: 'assign001',
+                    title: '线性表实现',
+                    description: '实现顺序表和链表的基本操作，包括插入、删除、查找等。',
+                    type: 'assignment',
+                    courseId: 'course001',
+                    maxScore: 100,
+                    startTime: '2024-02-01T00:00:00Z',
+                    endTime: '2024-02-15T23:59:59Z',
+                    createdAt: '2024-01-28T10:00:00Z',
+                    updatedAt: '2024-01-28T10:00:00Z'
+                },
+                {
+                    id: 'assign002',
+                    title: '二叉树遍历',
+                    description: '实现二叉树的前序、中序、后序遍历算法。',
+                    type: 'assignment',
+                    courseId: 'course001',
+                    maxScore: 100,
+                    startTime: '2024-02-16T00:00:00Z',
+                    endTime: '2024-03-01T23:59:59Z',
+                    createdAt: '2024-02-10T14:30:00Z',
+                    updatedAt: '2024-02-10T14:30:00Z'
+                },
+                {
+                    id: 'assign003',
+                    title: '期中考试',
+                    description: '涵盖前半学期所有内容的综合性考试。',
+                    type: 'exam',
+                    courseId: 'course001',
+                    maxScore: 150,
+                    startTime: '2024-03-15T09:00:00Z',
+                    endTime: '2024-03-15T11:30:00Z',
+                    createdAt: '2024-02-20T16:00:00Z',
+                    updatedAt: '2024-02-20T16:00:00Z'
+                },
+                {
+                    id: 'assign004',
+                    title: '网络编程基础',
+                    description: '使用Socket API实现简单的客户端服务器通信程序。',
+                    type: 'assignment',
+                    courseId: 'course002',
+                    maxScore: 100,
+                    startTime: '2024-02-05T00:00:00Z',
+                    endTime: '2024-02-20T23:59:59Z',
+                    createdAt: '2024-02-01T11:00:00Z',
+                    updatedAt: '2024-02-01T11:00:00Z'
+                },
+                {
+                    id: 'assign005',
+                    title: '数据库设计',
+                    description: '为一个简单的图书管理系统设计数据库模式并实现。',
+                    type: 'assignment',
+                    courseId: 'course004',
+                    maxScore: 100,
+                    startTime: '2024-02-10T00:00:00Z',
+                    endTime: '2024-02-25T23:59:59Z',
+                    createdAt: '2024-02-05T15:30:00Z',
+                    updatedAt: '2024-02-05T15:30:00Z'
+                }
+            ],
+            submissions: [
+                {
+                    id: 'sub001',
+                    assignmentId: 'assign001',
+                    studentId: 's001',
+                    submittedTime: '2024-02-12T14:30:00Z',
+                    content: '线性表作业完成，包含完整的代码和测试用例。',
+                    files: ['linkedlist.cpp', 'testlist.cpp', 'README.md'],
+                    status: 'graded',
+                    score: 92,
+                    feedback: '代码结构清晰，逻辑正确，测试用例完善。',
+                    gradedTime: '2024-02-14T10:00:00Z'
+                },
+                {
+                    id: 'sub002',
+                    assignmentId: 'assign001',
+                    studentId: 's002',
+                    submittedTime: '2024-02-13T16:45:00Z',
+                    content: '完成了顺序表和链表的实现，代码运行正常。',
+                    files: ['seqlist.c', 'linkedlist.c'],
+                    status: 'graded',
+                    score: 85,
+                    feedback: '实现基本正确，建议优化代码注释和错误处理。',
+                    gradedTime: '2024-02-14T11:30:00Z'
+                },
+                {
+                    id: 'sub003',
+                    assignmentId: 'assign001',
+                    studentId: 's003',
+                    submittedTime: '2024-02-14T20:15:00Z',
+                    content: '线性表作业实现，包含所有要求的功能。',
+                    files: ['list.cpp', 'main.cpp'],
+                    status: 'pending',
+                    score: null,
+                    feedback: null,
+                    gradedTime: null
+                },
+                {
+                    id: 'sub004',
+                    assignmentId: 'assign002',
+                    studentId: 's001',
+                    submittedTime: '2024-02-25T18:20:00Z',
+                    content: '二叉树遍历实现完成，包含递归和非递归版本。',
+                    files: ['tree.cpp', 'traversal.cpp'],
+                    status: 'pending',
+                    score: null,
+                    feedback: null,
+                    gradedTime: null
+                },
+                {
+                    id: 'sub005',
+                    assignmentId: 'assign004',
+                    studentId: 's001',
+                    submittedTime: '2024-02-18T22:30:00Z',
+                    content: 'Socket编程作业，实现了客户端服务器聊天程序。',
+                    files: ['client.c', 'server.c', 'protocol.h'],
+                    status: 'graded',
+                    score: 88,
+                    feedback: '功能实现完整，网络协议设计合理。',
+                    gradedTime: '2024-02-20T09:00:00Z'
+                }
+            ],
             grades: [],
             materials: [],
             logs: [],
