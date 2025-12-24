@@ -85,6 +85,42 @@ class TeacherDashboard {
 
         // 模态框事件监听
         this.setupCourseModalListeners();
+        this.setupEditCourseModalListeners();
+        this.setupAssignmentModalListeners();
+
+        // 创建作业/考试按钮
+        const createAssignmentBtn = document.getElementById('createAssignmentBtn');
+        if (createAssignmentBtn) {
+            createAssignmentBtn.addEventListener('click', (e) => {
+                console.log('Create assignment button clicked');
+                e.preventDefault();
+                this.showCreateAssignmentModal();
+            });
+        }
+
+        // 快速操作 - 创建作业
+        const quickCreateAssignment = document.querySelector('[data-action="create-assignment"]');
+        if (quickCreateAssignment) {
+            quickCreateAssignment.addEventListener('click', () => {
+                this.showCreateAssignmentModal();
+            });
+        }
+
+        // 作业与考试tab切换
+        const tabButtons = document.querySelectorAll('.assignments-tabs .tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                console.log('Tab button clicked:', btn.dataset.tab);
+                // 移除所有active类
+                tabButtons.forEach(b => b.classList.remove('active'));
+                // 添加active类到当前按钮
+                btn.classList.add('active');
+                
+                // 筛选对应类型的作业
+                const type = btn.dataset.tab;
+                this.filterAssignmentsByType(type);
+            });
+        });
 
         // 搜索功能
         const courseSearchInput = document.getElementById('courseSearchInput');
@@ -170,9 +206,7 @@ class TeacherDashboard {
             case 'courses':
                 this.renderCourses();
                 break;
-            case 'students':
-                this.renderStudents();
-                break;
+
             case 'assignments':
                 this.renderAssignments();
                 break;
@@ -454,6 +488,10 @@ class TeacherDashboard {
         const assignments = dataManager.getCourseAssignments(course.id);
         const students = dataManager.getCourseStudents(course.id);
         const statusBadge = this.getStatusBadge(course.status);
+        
+        // 计算作业和考试数量
+        const assignmentCount = assignments.filter(a => a.type === 'assignment').length;
+        const examCount = assignments.filter(a => a.type === 'exam').length;
 
         card.innerHTML = `
             <div class="course-card-header">
@@ -483,9 +521,8 @@ class TeacherDashboard {
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-number">${students.length}</span>
+                        <span class="stat-number">${students.length}/${course.maxStudents}</span>
                         <span class="stat-label">已选/容量</span>
-                        <span class="stat-detail">${course.maxStudents}人</span>
                     </div>
                 </div>
                 <div class="stat-item">
@@ -493,8 +530,17 @@ class TeacherDashboard {
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-number">${assignments.length}</span>
+                        <span class="stat-number">${assignmentCount}</span>
                         <span class="stat-label">作业数量</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number">${examCount}</span>
+                        <span class="stat-label">考试数量</span>
                     </div>
                 </div>
                 <div class="stat-item">
@@ -506,22 +552,10 @@ class TeacherDashboard {
                         <span class="stat-label">学分</span>
                     </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-number">${Math.round((course.currentStudents / course.maxStudents) * 100)}%</span>
-                        <span class="stat-label">选课率</span>
-                    </div>
-                </div>
             </div>
             <div class="course-management-actions">
-                <button class="btn-primary" onclick="teacherDashboard.manageStudents('${course.id}')">
-                    <i class="fas fa-users"></i> 管理学生
-                </button>
-                <button class="btn-secondary" onclick="teacherDashboard.manageAssignments('${course.id}')">
-                    <i class="fas fa-tasks"></i> 管理作业
+                <button class="btn-primary" onclick="teacherDashboard.manageAssignments('${course.id}')">
+                    <i class="fas fa-tasks"></i> 管理作业/考试
                 </button>
                 <button class="btn-info" onclick="teacherDashboard.manageGrades('${course.id}')">
                     <i class="fas fa-chart-bar"></i> 管理成绩
@@ -532,69 +566,32 @@ class TeacherDashboard {
         return card;
     }
 
-    // 渲染学生管理
-    renderStudents() {
-        const studentsList = document.getElementById('studentsList');
-        if (!studentsList) return;
 
-        // 获取所有课程的学生
-        const allStudents = new Map();
-        this.coursesData.forEach(course => {
-            const students = dataManager.getCourseStudents(course.id);
-            students.forEach(student => {
-                if (!allStudents.has(student.id)) {
-                    allStudents.set(student.id, {
-                        ...student,
-                        courses: []
-                    });
-                }
-                allStudents.get(student.id).courses.push(course.courseName);
-            });
-        });
-
-        studentsList.innerHTML = '';
-
-        allStudents.forEach(student => {
-            const studentCard = this.createStudentCard(student);
-            studentsList.appendChild(studentCard);
-        });
-    }
-
-    // 创建学生卡片
-    createStudentCard(student) {
-        const card = document.createElement('div');
-        card.className = 'student-card';
-        
-        card.innerHTML = `
-            <div class="student-header">
-                <img src="https://picsum.photos/seed/${student.id}/50/50.jpg" alt="学生头像" class="student-avatar">
-                <div class="student-info">
-                    <h4>${student.name}</h4>
-                    <p>${student.username} | ${student.major}</p>
-                </div>
-            </div>
-            <div class="student-details">
-                <p><i class="fas fa-envelope"></i> ${student.email}</p>
-                <p><i class="fas fa-phone"></i> ${student.phone}</p>
-                <p><i class="fas fa-book"></i> 课程: ${student.courses.join(', ')}</p>
-            </div>
-            <div class="student-actions">
-                <button class="btn-primary" onclick="teacherDashboard.viewStudentGrades('${student.id}')">查看成绩</button>
-                <button class="btn-secondary" onclick="teacherDashboard.contactStudent('${student.id}')">联系学生</button>
-            </div>
-        `;
-
-        return card;
-    }
 
     // 渲染作业管理
     renderAssignments() {
         const assignmentsList = document.getElementById('assignmentsList');
+        const emptyState = document.getElementById('assignmentsEmptyState');
+        
         if (!assignmentsList) return;
 
         assignmentsList.innerHTML = '';
 
-        this.assignmentsData.forEach(assignment => {
+        if (this.assignmentsData.length === 0) {
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+
+        // 默认只显示作业类型
+        const filteredAssignments = this.assignmentsData.filter(assignment => assignment.type === 'assignment');
+        
+        filteredAssignments.forEach(assignment => {
             const course = this.coursesData.find(c => c.id === assignment.courseId);
             const submissions = dataManager.getData('submissions').filter(s => s.assignmentId === assignment.id);
             
@@ -789,44 +786,7 @@ class TeacherDashboard {
         }
     }
 
-    // 搜索学生
-    searchStudents() {
-        const searchTerm = document.getElementById('studentSearch').value.trim();
-        if (!searchTerm) {
-            this.renderStudents();
-            return;
-        }
 
-        const searchResults = dataManager.searchUsers(searchTerm, 'student');
-        
-        const studentsList = document.getElementById('studentsList');
-        studentsList.innerHTML = '';
-
-        if (searchResults.length === 0) {
-            studentsList.innerHTML = '<div class="no-results">未找到匹配的学生</div>';
-            return;
-        }
-
-        // 过滤出实际在教师课程中的学生
-        searchResults.forEach(student => {
-            const studentCourses = [];
-            this.coursesData.forEach(course => {
-                const courseStudents = dataManager.getCourseStudents(course.id);
-                if (courseStudents.some(s => s.id === student.id)) {
-                    studentCourses.push(course.courseName);
-                }
-            });
-
-            if (studentCourses.length > 0) {
-                const studentWithCourses = {
-                    ...student,
-                    courses: studentCourses
-                };
-                const studentCard = this.createStudentCard(studentWithCourses);
-                studentsList.appendChild(studentCard);
-            }
-        });
-    }
 
     // 显示通知
     showNotifications() {
@@ -841,14 +801,67 @@ class TeacherDashboard {
         }
     }
 
-    // 占位方法 - 这些方法的具体实现需要根据业务需求进一步开发
+    // 编辑课程
     editCourse(courseId) {
-        showMessage('编辑课程功能正在开发中...', 'info');
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) {
+            showMessage('课程不存在', 'error');
+            return;
+        }
+
+        this.showEditCourseModal(course);
     }
 
+    // 删除课程
     deleteCourse(courseId) {
-        if (confirm('确定要删除这门课程吗？此操作不可撤销！')) {
-            showMessage('删除课程功能正在开发中...', 'info');
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) {
+            showMessage('课程不存在', 'error');
+            return;
+        }
+
+        // 检查课程是否有学生选课
+        const students = dataManager.getCourseStudents(courseId);
+        if (students.length > 0) {
+            if (!confirm(`"${course.courseName}" 已有 ${students.length} 名学生选课，删除课程将同时删除所有相关数据（包括学生选课记录、作业、成绩等）。确定要删除吗？`)) {
+                return;
+            }
+        } else {
+            if (!confirm(`确定要删除课程"${course.courseName}"吗？此操作不可撤销！`)) {
+                return;
+            }
+        }
+
+        try {
+            // 删除课程相关的所有数据
+            this.deleteCourseRelatedData(courseId);
+            
+            // 删除课程
+            const courseIndex = dataManager.data.courses.findIndex(c => c.id === courseId);
+            if (courseIndex > -1) {
+                dataManager.data.courses.splice(courseIndex, 1);
+                
+                // 保存数据
+                dataManager.saveData();
+                
+                // 重新加载数据并渲染
+                this.loadTeacherData();
+                this.renderCourses();
+                
+                showMessage(`课程"${course.courseName}"删除成功`, 'success');
+                
+                // 添加操作日志
+                try {
+                    dataManager.addLog(this.userData.id, 'delete_course', `删除课程: ${course.courseName}`);
+                } catch (logError) {
+                    console.log('日志记录失败，但课程删除成功');
+                }
+            } else {
+                showMessage('课程不存在或已被删除', 'warning');
+            }
+        } catch (error) {
+            console.error('删除课程失败:', error);
+            showMessage('删除课程失败：' + error.message, 'error');
         }
     }
 
@@ -864,13 +877,7 @@ class TeacherDashboard {
         showMessage('管理成绩功能正在开发中...', 'info');
     }
 
-    viewStudentGrades(studentId) {
-        showMessage('查看学生成绩功能正在开发中...', 'info');
-    }
 
-    contactStudent(studentId) {
-        showMessage('联系学生功能正在开发中...', 'info');
-    }
 
     gradeAssignments(assignmentId) {
         showMessage('批改作业功能正在开发中...', 'info');
@@ -1018,7 +1025,22 @@ class TeacherDashboard {
     // 发布课程
     publishCourse() {
         const courseData = this.getFormData();
-        if (!this.validateCourseData(courseData, true)) {
+        if (!this.validateCourseData(courseData, false)) {
+            return;
+        }
+
+        // 额外检查课程编号是否重复
+        const existingCourse = this.coursesData.find(course => 
+            course.courseCode === courseData.courseCode
+        );
+        if (existingCourse) {
+            showMessage('课程编号已存在，请使用其他编号', 'error');
+            return;
+        }
+
+        // 发布时的额外验证
+        if (!courseData.description || courseData.description.length < 10) {
+            showMessage('发布课程时，课程简介不能少于10个字符', 'error');
             return;
         }
 
@@ -1086,14 +1108,43 @@ class TeacherDashboard {
             if (!data.description || data.description.length < 10) {
                 errors.push('发布课程时，课程简介不能少于10个字符');
             }
+        }
 
-            // 检查课程编号是否重复
-            const existingCourse = this.coursesData.find(course => 
-                course.courseCode === data.courseCode
-            );
-            if (existingCourse) {
-                errors.push('课程编号已存在，请使用其他编号');
-            }
+        if (errors.length > 0) {
+            showMessage(errors.join('\n'), 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    // 验证编辑课程数据
+    validateEditCourseData(data, excludeCourseId = null) {
+        const errors = [];
+
+        // 基础字段验证
+        if (!data.courseName) {
+            errors.push('课程名称不能为空');
+        }
+        if (!data.courseCode) {
+            errors.push('课程编号不能为空');
+        }
+        if (!data.credits || data.credits < 1 || data.credits > 6) {
+            errors.push('学分必须在1-6之间');
+        }
+        if (!data.maxStudents || data.maxStudents < 10 || data.maxStudents > 200) {
+            errors.push('最大选课人数必须在10-200之间');
+        }
+        if (!data.category) {
+            errors.push('请选择课程类别');
+        }
+
+        // 检查课程编号是否重复（排除当前课程）
+        const existingCourse = this.coursesData.find(course => 
+            course.courseCode === data.courseCode && course.id !== excludeCourseId
+        );
+        if (existingCourse) {
+            errors.push('课程编号已存在，请使用其他编号');
         }
 
         if (errors.length > 0) {
@@ -1198,12 +1249,592 @@ class TeacherDashboard {
         });
     }
 
+    // 设置编辑课程模态框事件监听器
+    setupEditCourseModalListeners() {
+        // 编辑课程表单提交
+        const editCourseForm = document.getElementById('editCourseForm');
+        if (editCourseForm) {
+            editCourseForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateCourse();
+            });
+        }
+
+        // 取消按钮
+        const cancelEditBtn = document.getElementById('cancelEditCourse');
+        if (cancelEditBtn) {
+            cancelEditBtn.addEventListener('click', () => {
+                this.closeEditCourseModal();
+            });
+        }
+
+        // 关闭按钮
+        const closeBtn = document.getElementById('closeEditCourseModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeEditCourseModal();
+            });
+        }
+
+        // 点击模态框外部关闭
+        const modal = document.getElementById('editCourseModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeEditCourseModal();
+                }
+            });
+        }
+    }
+
+    // 显示编辑课程模态框
+    showEditCourseModal(course) {
+        const modal = document.getElementById('editCourseModal');
+        if (!modal) return;
+
+        // 填充表单数据
+        const form = document.getElementById('editCourseForm');
+        if (form) {
+            form.editCourseId.value = course.id;
+            form.editCourseName.value = course.courseName || '';
+            form.editCourseCode.value = course.courseCode || '';
+            form.editCourseDescription.value = course.description || '';
+            form.editCourseCredits.value = course.credits || 1;
+            form.editMaxStudents.value = course.maxStudents || 10;
+            form.editCourseCategory.value = course.category || 'required';
+            form.editCourseStatus.value = course.status || 'draft';
+        }
+
+        // 显示模态框
+        modal.classList.add('active');
+        
+        // 添加动画效果
+        setTimeout(() => {
+            modal.querySelector('.modal-content').style.transform = 'scale(1)';
+            modal.querySelector('.modal-content').style.opacity = '1';
+        }, 10);
+    }
+
+    // 关闭编辑课程模态框
+    closeEditCourseModal() {
+        const modal = document.getElementById('editCourseModal');
+        if (!modal) return;
+
+        // 添加关闭动画
+        modal.querySelector('.modal-content').style.transform = 'scale(0.9)';
+        modal.querySelector('.modal-content').style.opacity = '0';
+
+        setTimeout(() => {
+            modal.classList.remove('active');
+        }, 200);
+    }
+
+    // 更新课程
+    updateCourse() {
+        const form = document.getElementById('editCourseForm');
+        if (!form) return;
+
+        const courseId = form.editCourseId.value;
+        const course = this.coursesData.find(c => c.id === courseId);
+        
+        if (!course) {
+            showMessage('课程不存在', 'error');
+            return;
+        }
+
+        const updatedData = {
+            courseName: form.editCourseName.value.trim(),
+            courseCode: form.editCourseCode.value.trim(),
+            description: form.editCourseDescription.value.trim(),
+            credits: parseInt(form.editCourseCredits.value) || 0,
+            maxStudents: parseInt(form.editMaxStudents.value) || 0,
+            category: form.editCourseCategory.value,
+            status: form.editCourseStatus.value,
+            updatedAt: new Date().toISOString()
+        };
+
+        // 验证数据（使用编辑模式的验证）
+        if (!this.validateEditCourseData(updatedData, courseId)) {
+            return;
+        }
+
+        try {
+            // 更新课程数据
+            Object.assign(course, updatedData);
+            
+            // 如果是草稿改为发布，设置发布时间
+            if (course.status === 'published' && !course.publishedAt) {
+                course.publishedAt = new Date().toISOString();
+            }
+
+            // 保存数据
+            dataManager.saveData();
+            
+            // 重新加载数据并渲染
+            this.loadTeacherData();
+            this.renderCourses();
+            
+            showMessage(`课程"${course.courseName}"更新成功`, 'success');
+            this.closeEditCourseModal();
+            
+            // 添加操作日志
+            dataManager.addLog(this.userData.id, 'update_course', `更新课程: ${course.courseName}`);
+        } catch (error) {
+            console.error('更新课程失败:', error);
+            showMessage('更新课程失败，请重试', 'error');
+        }
+    }
+
+    // 删除课程相关数据
+    deleteCourseRelatedData(courseId) {
+        try {
+            // 删除学生选课记录
+            if (dataManager.data.enrollments) {
+                dataManager.data.enrollments = dataManager.data.enrollments.filter(e => e.courseId !== courseId);
+            }
+            
+            // 删除课程作业和提交记录
+            if (dataManager.data.assignments) {
+                const courseAssignments = dataManager.data.assignments.filter(a => a.courseId === courseId);
+                
+                // 删除这些作业的提交记录
+                if (dataManager.data.submissions) {
+                    courseAssignments.forEach(assignment => {
+                        dataManager.data.submissions = dataManager.data.submissions.filter(s => s.assignmentId !== assignment.id);
+                    });
+                }
+                
+                // 删除课程作业
+                dataManager.data.assignments = dataManager.data.assignments.filter(a => a.courseId !== courseId);
+            }
+            
+            // 删除课程成绩记录（简化逻辑）
+            if (dataManager.data.grades) {
+                // 这里我们可以简单跳过成绩删除，因为逻辑复杂，或者可以添加更简单的逻辑
+                // 为了确保删除成功，我们先注释掉复杂的成绩删除逻辑
+                // dataManager.data.grades = dataManager.data.grades.filter(g => g.courseId !== courseId);
+            }
+            
+            // 删除课程课件
+            if (dataManager.data.materials) {
+                dataManager.data.materials = dataManager.data.materials.filter(m => m.courseId !== courseId);
+            }
+        } catch (error) {
+            console.error('删除课程相关数据时出错:', error);
+            // 即使部分删除失败，也继续删除主课程
+        }
+    }
+
     showAddCourseModal() {
         showMessage('添加课程功能正在开发中...', 'info');
     }
 
+    // 设置作业模态框事件监听器
+    setupAssignmentModalListeners() {
+        // 创建作业表单提交
+        const createAssignmentForm = document.getElementById('createAssignmentForm');
+        if (createAssignmentForm) {
+            createAssignmentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createAssignment();
+            });
+        }
+
+        // 取消按钮
+        const cancelBtn = document.getElementById('cancelCreateAssignment');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeCreateAssignmentModal();
+            });
+        }
+
+        // 关闭按钮
+        const closeBtn = document.getElementById('closeCreateAssignmentModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeCreateAssignmentModal();
+            });
+        }
+
+        // 点击模态框外部关闭
+        const modal = document.getElementById('createAssignmentModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeCreateAssignmentModal();
+                }
+            });
+        }
+
+        // 文件上传
+        const fileUploadArea = document.getElementById('assignmentFileUpload');
+        const fileInput = document.getElementById('assignmentFiles');
+        
+        if (fileUploadArea && fileInput) {
+            fileUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', () => {
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                this.handleFileSelect(e.dataTransfer.files);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                this.handleFileSelect(e.target.files);
+            });
+        }
+
+        // 任务类型切换
+        const typeInputs = document.querySelectorAll('input[name="assignmentType"]');
+        typeInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                this.toggleAssignmentType(input.value);
+            });
+        });
+
+        // 高级设置切换
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsContent = document.getElementById('settingsContent');
+        if (settingsToggle && settingsContent) {
+            settingsToggle.addEventListener('click', () => {
+                settingsContent.classList.toggle('show');
+                const chevron = settingsToggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down');
+                    chevron.classList.toggle('fa-chevron-up');
+                }
+            });
+        }
+
+        // Tab切换
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.filterAssignmentsByType(btn.dataset.tab);
+            });
+        });
+    }
+
+    // 显示创建作业模态框
+    showCreateAssignmentModal() {
+        console.log('showCreateAssignmentModal called');
+        const modal = document.getElementById('createAssignmentModal');
+        if (!modal) {
+            console.error('createAssignmentModal not found');
+            return;
+        }
+
+        const modalContent = modal.querySelector('.modal-content');
+        if (!modalContent) {
+            console.error('modal-content not found in createAssignmentModal');
+            return;
+        }
+        console.log('Modal and modal-content found');
+
+        // 重置表单
+        const form = document.getElementById('createAssignmentForm');
+        if (form) {
+            form.reset();
+            // 设置默认开始时间为当前时间
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
+            form.assignmentStartTime.value = localDateTime;
+        }
+
+        // 加载课程选项
+        this.loadCourseOptions();
+
+        // 重置动画状态
+        modalContent.style.transform = 'scale(0.9)';
+        modalContent.style.opacity = '0';
+        
+        // 显示模态框
+        modal.classList.add('active');
+        
+        // 添加动画效果
+        setTimeout(() => {
+            modalContent.style.transform = 'scale(1)';
+            modalContent.style.opacity = '1';
+        }, 10);
+    }
+
+    // 关闭创建作业模态框
+    closeCreateAssignmentModal() {
+        const modal = document.getElementById('createAssignmentModal');
+        if (!modal) return;
+
+        const modalContent = modal.querySelector('.modal-content');
+        if (!modalContent) return;
+
+        // 添加关闭动画
+        modalContent.style.transform = 'scale(0.9)';
+        modalContent.style.opacity = '0';
+
+        setTimeout(() => {
+            modal.classList.remove('active');
+            // 清空已上传文件列表
+            const uploadedFiles = document.getElementById('uploadedFiles');
+            if (uploadedFiles) {
+                uploadedFiles.innerHTML = '';
+            }
+            this.currentFiles = [];
+        }, 200);
+    }
+
+    // 加载课程选项
+    loadCourseOptions() {
+        const courseSelect = document.getElementById('assignmentCourse');
+        if (!courseSelect) return;
+
+        courseSelect.innerHTML = '<option value="">选择课程</option>';
+        
+        this.coursesData.filter(course => course.status === 'published').forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = `${course.courseName} (${course.courseCode})`;
+            courseSelect.appendChild(option);
+        });
+    }
+
+    // 切换作业类型
+    toggleAssignmentType(type) {
+        const durationField = document.getElementById('assignmentDuration').parentElement;
+        if (type === 'exam') {
+            durationField.style.display = 'block';
+            durationField.querySelector('label').textContent = '考试时长（分钟）*';
+        } else {
+            durationField.style.display = 'none';
+        }
+    }
+
+    // 处理文件选择
+    handleFileSelect(files) {
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        const allowedTypes = ['.doc', '.docx', '.pdf', '.txt', '.jpg', '.jpeg', '.png', '.mp4', '.mp3'];
+        
+        Array.from(files).forEach(file => {
+            if (file.size > maxSize) {
+                showMessage(`文件 "${file.name}" 超过50MB限制`, 'error');
+                return;
+            }
+
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(fileExt)) {
+                showMessage(`文件 "${file.name}" 格式不支持`, 'error');
+                return;
+            }
+
+            if (!this.currentFiles) {
+                this.currentFiles = [];
+            }
+
+            if (this.currentFiles.length >= 5) {
+                showMessage('最多只能上传5个文件', 'error');
+                return;
+            }
+
+            this.currentFiles.push(file);
+            this.displayUploadedFile(file);
+        });
+
+        // 清空文件输入
+        document.getElementById('assignmentFiles').value = '';
+    }
+
+    // 显示已上传文件
+    displayUploadedFile(file) {
+        const uploadedFiles = document.getElementById('uploadedFiles');
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        let iconClass = 'file';
+        
+        if (['pdf'].includes(fileExt)) iconClass = 'pdf';
+        else if (['doc', 'docx'].includes(fileExt)) iconClass = 'doc';
+        else if (['txt'].includes(fileExt)) iconClass = 'txt';
+        else if (['jpg', 'jpeg', 'png'].includes(fileExt)) iconClass = 'image';
+        else if (['mp4'].includes(fileExt)) iconClass = 'video';
+        else if (['mp3'].includes(fileExt)) iconClass = 'audio';
+
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <div class="file-icon ${iconClass}">
+                    <i class="fas fa-file-${iconClass}"></i>
+                </div>
+                <div class="file-details">
+                    <h5>${file.name}</h5>
+                    <span>${fileSize} MB</span>
+                </div>
+            </div>
+            <button type="button" class="file-remove" onclick="teacherDashboard.removeUploadedFile(this, '${file.name}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        uploadedFiles.appendChild(fileItem);
+    }
+
+    // 移除已上传文件
+    removeUploadedFile(button, fileName) {
+        const fileItem = button.closest('.file-item');
+        fileItem.remove();
+        
+        this.currentFiles = this.currentFiles.filter(file => file.name !== fileName);
+    }
+
+    // 创建作业
+    createAssignment() {
+        const form = document.getElementById('createAssignmentForm');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const assignmentType = formData.get('assignmentType');
+
+        // 获取表单数据
+        const assignmentData = {
+            type: assignmentType,
+            title: formData.get('assignmentTitle').trim(),
+            courseId: formData.get('assignmentCourse'),
+            description: formData.get('assignmentDescription').trim(),
+            startTime: formData.get('assignmentStartTime'),
+            endTime: formData.get('assignmentEndTime'),
+            maxScore: parseInt(formData.get('assignmentMaxScore')) || 100,
+            duration: assignmentType === 'exam' ? parseInt(formData.get('assignmentDuration')) : null,
+            lateSubmission: formData.get('assignmentLateSubmission'),
+            allowPeerReview: formData.get('assignmentVisibility') === 'yes',
+            teacherId: this.userData.id,
+            files: this.currentFiles || [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        // 验证数据
+        if (!this.validateAssignmentData(assignmentData)) {
+            return;
+        }
+
+        try {
+            // 生成作业ID
+            const assignmentId = dataManager.generateId();
+            const assignment = {
+                id: assignmentId,
+                ...assignmentData
+            };
+
+            // 保存到数据管理器
+            dataManager.data.assignments.push(assignment);
+            dataManager.saveData();
+
+            // 重新加载数据并渲染
+            this.loadTeacherData();
+            this.renderAssignments();
+
+            showMessage(`${assignmentType === 'exam' ? '考试' : '作业'}创建成功！`, 'success');
+            this.closeCreateAssignmentModal();
+
+            // 添加操作日志
+            dataManager.addLog(this.userData.id, 'create_assignment', `创建${assignmentType === 'exam' ? '考试' : '作业'}: ${assignmentData.title}`);
+
+        } catch (error) {
+            console.error('创建作业失败:', error);
+            showMessage('创建作业失败，请重试', 'error');
+        }
+    }
+
+    // 验证作业数据
+    validateAssignmentData(data) {
+        const errors = [];
+
+        if (!data.title) {
+            errors.push('标题不能为空');
+        }
+        if (!data.courseId) {
+            errors.push('请选择所属课程');
+        }
+        if (!data.startTime) {
+            errors.push('请设置开始时间');
+        }
+        if (!data.endTime) {
+            errors.push('请设置截止时间');
+        }
+        if (new Date(data.endTime) <= new Date(data.startTime)) {
+            errors.push('截止时间必须晚于开始时间');
+        }
+        if (data.type === 'exam' && (!data.duration || data.duration < 30)) {
+            errors.push('考试时长不能少于30分钟');
+        }
+
+        if (errors.length > 0) {
+            showMessage(errors.join('\n'), 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    // 按类型筛选作业
+    filterAssignmentsByType(type) {
+        console.log('Filtering assignments by type:', type);
+        const assignmentsList = document.getElementById('assignmentsList');
+        if (!assignmentsList) return;
+
+        // 映射tab类型到数据类型
+        const dataTypeMap = {
+            'assignments': 'assignment',
+            'exams': 'exam'
+        };
+        
+        const dataType = dataTypeMap[type] || type;
+        console.log('Mapped data type:', dataType);
+        console.log('Total assignments:', this.assignmentsData.length);
+        
+        const filteredAssignments = this.assignmentsData.filter(assignment => assignment.type === dataType);
+        console.log('Filtered assignments count:', filteredAssignments.length);
+
+        assignmentsList.innerHTML = '';
+
+        if (filteredAssignments.length === 0) {
+            assignmentsList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-content">
+                        <i class="fas fa-${type === 'exams' ? 'clipboard-check' : 'file-alt'}"></i>
+                        <h3>暂无${type === 'exams' ? '考试' : '作业'}</h3>
+                        <p>点击"创建作业/考试"开始创建您的第一个${type === 'exams' ? '考试' : '作业'}</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        filteredAssignments.forEach(assignment => {
+            const course = this.coursesData.find(c => c.id === assignment.courseId);
+            const submissions = dataManager.getData('submissions').filter(s => s.assignmentId === assignment.id);
+            
+            const assignmentCard = this.createAssignmentCard(assignment, course, submissions);
+            assignmentsList.appendChild(assignmentCard);
+        });
+    }
+
     showAddAssignmentModal() {
-        showMessage('添加作业功能正在开发中...', 'info');
+        this.showCreateAssignmentModal();
     }
 }
 

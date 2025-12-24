@@ -921,6 +921,48 @@ class DataManager {
         
         return stats;
     }
+
+    // 更新数据
+    updateData(collection, id, newData) {
+        if (!this.data[collection]) {
+            console.error(`Collection ${collection} not found`);
+            return false;
+        }
+        
+        const index = this.data[collection].findIndex(item => item.id === id);
+        if (index === -1) {
+            console.error(`Item with id ${id} not found in ${collection}`);
+            return false;
+        }
+        
+        // 更新数据，保留原有字段
+        this.data[collection][index] = {
+            ...this.data[collection][index],
+            ...newData,
+            updatedAt: new Date().toISOString()
+        };
+        
+        this.saveData();
+        return true;
+    }
+
+    // 删除数据
+    deleteData(collection, id) {
+        if (!this.data[collection]) {
+            console.error(`Collection ${collection} not found`);
+            return false;
+        }
+        
+        const index = this.data[collection].findIndex(item => item.id === id);
+        if (index === -1) {
+            console.error(`Item with id ${id} not found in ${collection}`);
+            return false;
+        }
+        
+        this.data[collection].splice(index, 1);
+        this.saveData();
+        return true;
+    }
 }
 
 // 创建全局数据管理器实例

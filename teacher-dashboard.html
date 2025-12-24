@@ -54,12 +54,7 @@
                         <span>课程管理</span>
                     </a>
                 </li>
-                <li class="nav-item" data-page="students">
-                    <a href="#students">
-                        <i class="fas fa-users"></i>
-                        <span>学生管理</span>
-                    </a>
-                </li>
+
                 <li class="nav-item" data-page="assignments">
                     <a href="#assignments">
                         <i class="fas fa-tasks"></i>
@@ -205,40 +200,7 @@
                 </div>
             </section>
 
-            <!-- 学生管理页面 -->
-            <section id="students" class="page-content">
-                <div class="content-header">
-                    <h2>学生管理</h2>
-                    <div class="header-actions">
-                        <select class="form-control" id="courseSelectForStudents">
-                            <option value="">选择课程</option>
-                        </select>
-                        <button class="btn-secondary" id="exportStudentsBtn">
-                            <i class="fas fa-download"></i>
-                            导出名单
-                        </button>
-                    </div>
-                </div>
 
-                <div class="students-table-container">
-                    <table class="students-table">
-                        <thead>
-                            <tr>
-                                <th>学号</th>
-                                <th>姓名</th>
-                                <th>班级</th>
-                                <th>选课时间</th>
-                                <th>学习进度</th>
-                                <th>当前成绩</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsTableBody">
-                            <!-- 学生数据将通过JS动态生成 -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
 
             <!-- 作业考试页面 -->
             <section id="assignments" class="page-content">
@@ -256,13 +218,29 @@
                 </div>
 
                 <div class="assignments-tabs">
-                    <button class="tab-btn active" data-tab="assignments">作业</button>
-                    <button class="tab-btn" data-tab="exams">考试</button>
+                    <button class="tab-btn active" data-tab="assignments">
+                        <i class="fas fa-file-alt"></i> 作业
+                    </button>
+                    <button class="tab-btn" data-tab="exams">
+                        <i class="fas fa-clipboard-check"></i> 考试
+                    </button>
                 </div>
 
                 <div class="assignments-content">
                     <div class="assignments-list" id="assignmentsList">
-                        <!-- 作业列表将通过JS动态生成 -->
+                        <!-- 作业考试列表将通过JS动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 空状态提示 -->
+                <div class="empty-state" id="assignmentsEmptyState" style="display: none;">
+                    <div class="empty-content">
+                        <i class="fas fa-tasks"></i>
+                        <h3>暂无作业或考试</h3>
+                        <p>点击"创建作业/考试"开始创建您的第一个任务</p>
+                        <button class="btn-primary" onclick="document.getElementById('createAssignmentBtn').click()">
+                            <i class="fas fa-plus"></i> 立即创建
+                        </button>
                     </div>
                 </div>
             </section>
@@ -472,6 +450,300 @@
                 <button type="button" class="btn-secondary" id="cancelCreateCourse">取消</button>
                 <button type="button" class="btn-primary" id="saveCourseDraft">保存草稿</button>
                 <button type="submit" form="createCourseForm" class="btn-success">发布课程</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑课程模态框 -->
+    <div id="editCourseModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>编辑课程</h3>
+                <span class="close" id="closeEditCourseModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editCourseForm">
+                    <input type="hidden" id="editCourseId" name="editCourseId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editCourseName">课程名称</label>
+                            <input type="text" id="editCourseName" name="editCourseName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCourseCode">课程编号</label>
+                            <input type="text" id="editCourseCode" name="editCourseCode" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCourseDescription">课程简介</label>
+                        <textarea id="editCourseDescription" name="editCourseDescription" rows="4"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editCourseCredits">学分</label>
+                            <input type="number" id="editCourseCredits" name="editCourseCredits" min="1" max="6" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMaxStudents">最大选课人数</label>
+                            <input type="number" id="editMaxStudents" name="editMaxStudents" min="10" max="200" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCourseCategory">课程类别</label>
+                        <select id="editCourseCategory" name="editCourseCategory" required>
+                            <option value="">请选择</option>
+                            <option value="required">必修课</option>
+                            <option value="elective">选修课</option>
+                            <option value="practical">实践课</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCourseStatus">课程状态</label>
+                        <select id="editCourseStatus" name="editCourseStatus" required>
+                            <option value="draft">草稿</option>
+                            <option value="published">已发布</option>
+                            <option value="archived">已归档</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelEditCourse">取消</button>
+                <button type="submit" form="editCourseForm" class="btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建作业/考试模态框 -->
+    <div id="createAssignmentModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>创建作业/考试</h3>
+                <span class="close" id="closeCreateAssignmentModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createAssignmentForm">
+                    <!-- 任务类型选择 -->
+                    <div class="form-group">
+                        <label>任务类型</label>
+                        <div class="assignment-type-selector">
+                            <label class="assignment-type-option">
+                                <input type="radio" name="assignmentType" value="assignment" checked>
+                                <div class="type-card">
+                                    <i class="fas fa-file-alt"></i>
+                                    <h4>作业</h4>
+                                    <p>布置课后练习、作业任务</p>
+                                </div>
+                            </label>
+                            <label class="assignment-type-option">
+                                <input type="radio" name="assignmentType" value="exam">
+                                <div class="type-card">
+                                    <i class="fas fa-clipboard-check"></i>
+                                    <h4>考试</h4>
+                                    <p>安排期中、期末考试</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assignmentTitle">标题</label>
+                            <input type="text" id="assignmentTitle" name="assignmentTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignmentCourse">所属课程</label>
+                            <select id="assignmentCourse" name="assignmentCourse" required>
+                                <option value="">选择课程</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assignmentDescription">描述说明</label>
+                        <textarea id="assignmentDescription" name="assignmentDescription" rows="4" placeholder="请详细描述作业要求或考试说明..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assignmentStartTime">开始时间</label>
+                            <input type="datetime-local" id="assignmentStartTime" name="assignmentStartTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignmentEndTime">截止时间</label>
+                            <input type="datetime-local" id="assignmentEndTime" name="assignmentEndTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assignmentMaxScore">满分</label>
+                            <input type="number" id="assignmentMaxScore" name="assignmentMaxScore" min="1" max="200" required value="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="assignmentDuration">考试时长（分钟）</label>
+                            <input type="number" id="assignmentDuration" name="assignmentDuration" min="30" max="300" placeholder="仅考试时需要">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>上传附件</label>
+                        <div class="file-upload-area" id="assignmentFileUpload">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>点击或拖拽文件到此处上传</p>
+                                <span>支持文档、图片、音视频格式（最大50MB）</span>
+                            </div>
+                            <input type="file" id="assignmentFiles" multiple accept=".doc,.docx,.pdf,.txt,.jpg,.jpeg,.png,.mp4,.mp3">
+                        </div>
+                        <div class="uploaded-files" id="uploadedFiles">
+                            <!-- 已上传文件列表 -->
+                        </div>
+                    </div>
+
+                    <!-- 高级设置 -->
+                    <div class="advanced-settings">
+                        <button type="button" class="settings-toggle" id="settingsToggle">
+                            <i class="fas fa-cog"></i> 高级设置
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="settings-content" id="settingsContent">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="assignmentLateSubmission">允许迟交</label>
+                                    <select id="assignmentLateSubmission" name="assignmentLateSubmission">
+                                        <option value="no">不允许</option>
+                                        <option value="yes">允许</option>
+                                        <option value="penalty">允许但扣分</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="assignmentVisibility">学生互评</label>
+                                    <select id="assignmentVisibility" name="assignmentVisibility">
+                                        <option value="no">不允许</option>
+                                        <option value="yes">允许</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelCreateAssignment">取消</button>
+                <button type="submit" form="createAssignmentForm" class="btn-primary">
+                    <i class="fas fa-save"></i> 发布
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑作业/考试模态框 -->
+    <div id="editAssignmentModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>编辑作业/考试</h3>
+                <span class="close" id="closeEditAssignmentModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editAssignmentForm">
+                    <input type="hidden" id="editAssignmentId" name="editAssignmentId">
+                    
+                    <!-- 任务类型选择 -->
+                    <div class="form-group">
+                        <label>任务类型</label>
+                        <div class="assignment-type-selector">
+                            <label class="assignment-type-option">
+                                <input type="radio" name="editAssignmentType" value="assignment">
+                                <div class="type-card">
+                                    <i class="fas fa-file-alt"></i>
+                                    <h4>作业</h4>
+                                    <p>布置课后练习、作业任务</p>
+                                </div>
+                            </label>
+                            <label class="assignment-type-option">
+                                <input type="radio" name="editAssignmentType" value="exam">
+                                <div class="type-card">
+                                    <i class="fas fa-clipboard-check"></i>
+                                    <h4>考试</h4>
+                                    <p>安排期中、期末考试</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editAssignmentTitle">标题</label>
+                            <input type="text" id="editAssignmentTitle" name="editAssignmentTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editAssignmentCourse">所属课程</label>
+                            <select id="editAssignmentCourse" name="editAssignmentCourse" required>
+                                <option value="">选择课程</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editAssignmentDescription">描述说明</label>
+                        <textarea id="editAssignmentDescription" name="editAssignmentDescription" rows="4" placeholder="请详细描述作业要求或考试说明..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editAssignmentStartTime">开始时间</label>
+                            <input type="datetime-local" id="editAssignmentStartTime" name="editAssignmentStartTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editAssignmentEndTime">截止时间</label>
+                            <input type="datetime-local" id="editAssignmentEndTime" name="editAssignmentEndTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editAssignmentMaxScore">满分</label>
+                            <input type="number" id="editAssignmentMaxScore" name="editAssignmentMaxScore" min="1" max="200" required value="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="editAssignmentDuration">考试时长（分钟）</label>
+                            <input type="number" id="editAssignmentDuration" name="editAssignmentDuration" min="30" max="300" placeholder="仅考试时需要">
+                        </div>
+                    </div>
+
+                    <!-- 高级设置 -->
+                    <div class="advanced-settings">
+                        <button type="button" class="settings-toggle" id="editSettingsToggle">
+                            <i class="fas fa-cog"></i> 高级设置
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="settings-content" id="editSettingsContent">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editAssignmentLateSubmission">允许迟交</label>
+                                    <select id="editAssignmentLateSubmission" name="editAssignmentLateSubmission">
+                                        <option value="no">不允许</option>
+                                        <option value="yes">允许</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editAssignmentVisibility">学生互评</label>
+                                    <select id="editAssignmentVisibility" name="editAssignmentVisibility">
+                                        <option value="no">不允许</option>
+                                        <option value="yes">允许</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelEditAssignment">取消</button>
+                <button type="submit" form="editAssignmentForm" class="btn-primary">
+                    <i class="fas fa-save"></i> 保存修改
+                </button>
             </div>
         </div>
     </div>
