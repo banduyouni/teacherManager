@@ -594,7 +594,7 @@ class TeacherDashboard {
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-content">
-                        <span class="stat-number">${students.length}/${course.maxStudents}</span>
+                        <span class="stat-number">${course.currentStudents}/${course.maxStudents}</span>
                         <span class="stat-label">已选/容量</span>
                     </div>
                 </div>
@@ -2421,77 +2421,6 @@ class TeacherDashboard {
             gradingList.innerHTML = '';
         }
     }
-
-    // // 创建批改作业卡片
-    // createGradingCard(assignment, course, submissions, gradedCount, pendingCount, isUrgent) {
-    //     const card = document.createElement('div');
-    //     card.className = `grading-assignment-card ${isUrgent ? 'assignment-urgent' : ''}`;
-    //     card.dataset.assignmentId = assignment.id;
-        
-    //     const progressPercentage = submissions.length > 0 ? Math.round((gradedCount / submissions.length) * 100) : 0;
-    //     const progressCircumference = 2 * Math.PI * 25; // 半径为25的圆周长
-    //     const progressOffset = progressCircumference - (progressPercentage / 100) * progressCircumference;
-        
-    //     const assignmentType = assignment.type === 'exam' ? '考试' : '作业';
-    //     const dueDate = assignment.endTime ? new Date(assignment.endTime) : null;
-    //     const isOverdue = dueDate && dueDate < new Date();
-
-    //     card.innerHTML = `
-    //         <div class="assignment-grading-header">
-    //             <div class="assignment-grading-info">
-    //                 <h4>${assignment.title}</h4>
-    //                 <div class="assignment-grading-meta">
-    //                     <span class="meta-badge course">${course ? course.courseName : '未知课程'}</span>
-    //                     <span class="meta-badge type-${assignment.type}">${assignmentType}</span>
-    //                     ${dueDate ? `
-    //                         <span class="meta-badge due-date">
-    //                             <i class="fas fa-clock"></i>
-    //                             ${isOverdue ? '已过期' : '截止: ' + dueDate.toLocaleDateString()}
-    //                         </span>
-    //                     ` : ''}
-    //                     <span class="meta-badge submission-count">
-    //                         <i class="fas fa-users"></i>
-    //                         ${submissions.length}人提交
-    //                     </span>
-    //                 </div>
-    //             </div>
-    //             <div class="assignment-grading-stats">
-    //                 <div class="progress-ring">
-    //                     <svg width="60" height="60">
-    //                         <circle class="background" cx="30" cy="30" r="25"></circle>
-    //                         <circle class="progress" cx="30" cy="30" r="25"
-    //                             style="stroke-dasharray: ${progressCircumference}; stroke-dashoffset: ${progressOffset};">
-    //                         </circle>
-    //                     </svg>
-    //                     <div class="progress-text">${progressPercentage}%</div>
-    //                 </div>
-    //                 <div style="text-align: center;">
-    //                     <div style="color: #10b981; font-weight: 600;">${gradedCount}已批改</div>
-    //                     <div style="color: #f59e0b; font-weight: 600;">${pendingCount}待批改</div>
-    //                 </div>
-    //             </div>
-    //         </div>
-            
-    //         ${assignment.description ? `
-    //             <div class="assignment-grading-description">
-    //                 ${assignment.description.length > 100 ? assignment.description.substring(0, 100) + '...' : assignment.description}
-    //             </div>
-    //         ` : ''}
-            
-    //         <div class="assignment-grading-actions">
-    //             <button class="btn-grade-assignment" onclick="teacherDashboard.startGrading('${assignment.id}')">
-    //                 <i class="fas fa-graduation-cap"></i>
-    //                 ${pendingCount > 0 ? `批改作业/考试 (${pendingCount})` : '查看批改'}
-    //             </button>
-    //             <button class="btn-view-details" onclick="teacherDashboard.viewAssignmentDetails('${assignment.id}')">
-    //                 <i class="fas fa-info-circle"></i>
-    //                 查看详情
-    //             </button>
-    //         </div>
-    //     `;
-
-    //     return card;
-    // }
 
     // 检查作业是否紧急
     isAssignmentUrgent(assignment) {
