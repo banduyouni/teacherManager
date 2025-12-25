@@ -944,11 +944,11 @@
     color: white;
     padding: 20px 24px;
     border-radius: 12px 12px 0 0;
-    margin: -30px -30px 20px -30px;
+    margin: 0;
 }
 
 .teacher-dashboard #createCourseModal .modal-header h3 {
-    margin: 0;
+    margin: 0 auto;
     font-size: 20px;
     font-weight: 600;
 }
@@ -979,7 +979,9 @@
 }
 
 .teacher-dashboard #createCourseModal .modal-footer button {
-    min-width: 120px;
+    min-width: 100px;
+    margin: 0 auto;
+    text-align: center;
 }
 
 /* 响应式设计 */
