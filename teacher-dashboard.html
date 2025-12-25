@@ -352,10 +352,6 @@
                         <select class="form-control" id="materialCourseFilter">
                             <option value="">选择课程</option>
                         </select>
-                        <button class="btn-primary" id="uploadMaterialBtn">
-                            <i class="fas fa-upload"></i>
-                            上传课件
-                        </button>
                     </div>
                 </div>
 
@@ -839,6 +835,54 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelGrading">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 课件上传模态框 -->
+    <div id="materialModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>上传课件</h3>
+                <span class="close" id="closeMaterialModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="uploadMaterialForm">
+                    <input type="hidden" id="materialCourseId" name="materialCourseId">
+                    
+                    <div class="form-group">
+                        <label>选择课程</label>
+                        <select id="materialCourse" name="materialCourse" required>
+                            <option value="">选择课程</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="upload-header">
+                            <label>上传文件</label>
+                            <div class="file-counter" id="fileCounter">
+                                <i class="fas fa-file"></i>
+                                <span id="fileCount">0</span> 个文件已选择
+                            </div>
+                        </div>
+                        <div class="file-upload-area" id="materialFileUpload">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>点击或拖拽文件到此处上传</p>
+                                <span>支持文档、图片、音视频、代码文件（最大50MB）</span>
+                            </div>
+                        </div>
+                        <div class="uploaded-files" id="materialUploadedFiles">
+                            <!-- 已上传文件列表 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelUploadMaterial">取消</button>
+                <button type="button" class="btn-primary" id="confirmUploadMaterial">
+                    <i class="fas fa-upload"></i> 上传课件
+                </button>
             </div>
         </div>
     </div>

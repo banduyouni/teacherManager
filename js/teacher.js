@@ -9,6 +9,36 @@ class TeacherDashboard {
         this.init();
     }
 
+    // 清理失效的Blob URL（页面刷新时）
+    cleanupInvalidBlobUrls() {
+        const courseMaterials = dataManager.getData('courseMaterials');
+        let hasChanges = false;
+        
+        courseMaterials.forEach(cm => {
+            if (cm.files && Array.isArray(cm.files)) {
+                cm.files = cm.files.filter(fileData => {
+                    // 如果是新格式的文件数据（包含blobUrl）
+                    if (typeof fileData === 'object' && fileData.blobUrl) {
+                        // 页面刷新后Blob URL会失效，直接清理
+                        try {
+                            URL.revokeObjectURL(fileData.blobUrl);
+                            hasChanges = true;
+                            return false; // 移除失效的Blob URL文件
+                        } catch (error) {
+                            return false; // 移除无法处理的Blob URL文件
+                        }
+                    }
+                    return true; // 保留旧格式文件
+                });
+            }
+        });
+        
+        // 如果有更改，保存数据
+        if (hasChanges) {
+            dataManager.saveData();
+        }
+    }
+
     // 初始化
     init() {
         // 检查用户登录状态
@@ -18,6 +48,10 @@ class TeacherDashboard {
         }
 
         this.userData = auth.currentUser;
+        
+        // 清理页面刷新后失效的Blob URL
+        this.cleanupInvalidBlobUrls();
+        
         this.loadTeacherData();
         this.setupEventListeners();
         this.renderCurrentPage();
@@ -93,6 +127,7 @@ class TeacherDashboard {
         this.setupCourseModalListeners();
         this.setupEditCourseModalListeners();
         this.setupAssignmentModalListeners();
+        this.setupMaterialModalListeners();
 
         // 创建作业/考试按钮
         const createAssignmentBtn = document.getElementById('createAssignmentBtn');
@@ -198,6 +233,127 @@ class TeacherDashboard {
 
         // 批改模态框特定处理
         this.setupGradingModalListeners();
+    }
+
+    // 设置课件模态框事件监听器
+    setupMaterialModalListeners() {
+        const cancelBtn = document.getElementById('cancelUploadMaterial');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeUploadMaterialModal();
+            });
+        }
+
+        const closeBtn = document.getElementById('closeMaterialModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeUploadMaterialModal();
+            });
+        }
+
+        const confirmBtn = document.getElementById('confirmUploadMaterial');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                this.uploadMaterials();
+            });
+        }
+
+        // 拖拽上传事件和点击上传事件
+        const uploadArea = document.getElementById('materialFileUpload');
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                this.handleMaterialFileSelection(e.dataTransfer.files);
+            });
+
+            uploadArea.addEventListener('click', () => {
+                // 创建临时的文件选择input
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.multiple = true;
+                fileInput.accept = '.doc,.docx,.pdf,.txt,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mp3,.wav,.cpp,.c,.h,.js,.html,.css,.java,.py,.sql,.xls,.xlsx,.ppt,.pptx,.zip,.rar';
+                
+                fileInput.addEventListener('change', (e) => {
+                    this.handleMaterialFileSelection(e.target.files);
+                    document.body.removeChild(fileInput);
+                });
+
+                fileInput.addEventListener('cancel', () => {
+                    document.body.removeChild(fileInput);
+                });
+
+                document.body.appendChild(fileInput);
+                fileInput.click();
+            });
+        }
+
+        // 全局上传区域事件监听器
+        const globalUploadArea = document.getElementById('uploadArea');
+        if (globalUploadArea) {
+            globalUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                globalUploadArea.classList.add('dragover');
+            });
+
+            globalUploadArea.addEventListener('dragleave', () => {
+                globalUploadArea.classList.remove('dragover');
+            });
+
+            globalUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                globalUploadArea.classList.remove('dragover');
+                // 直接打开上传模态框并处理文件
+                this.showUploadMaterialModalWithFiles(e.dataTransfer.files);
+            });
+
+            globalUploadArea.addEventListener('click', () => {
+                // 创建临时的文件选择input
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.multiple = true;
+                fileInput.accept = '.doc,.docx,.pdf,.txt,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mp3,.wav,.cpp,.c,.h,.js,.html,.css,.java,.py,.sql,.xls,.xlsx,.ppt,.pptx,.zip,.rar';
+                
+                fileInput.addEventListener('change', (e) => {
+                    this.showUploadMaterialModalWithFiles(e.target.files);
+                    document.body.removeChild(fileInput);
+                });
+
+                fileInput.addEventListener('cancel', () => {
+                    document.body.removeChild(fileInput);
+                });
+
+                document.body.appendChild(fileInput);
+                fileInput.click();
+            });
+        }
+
+        // 课程过滤器事件监听器
+        const materialCourseFilter = document.getElementById('materialCourseFilter');
+        if (materialCourseFilter) {
+            materialCourseFilter.addEventListener('change', () => {
+                this.renderMaterials();
+            });
+        }
+
+        // 模态框外部点击关闭
+        const modal = document.getElementById('materialModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeUploadMaterialModal();
+                }
+            });
+        }
     }
 
     // 设置批改模态框监听器
@@ -861,25 +1017,87 @@ class TeacherDashboard {
         return card;
     }
 
+    // 初始化课程过滤器
+    initializeMaterialCourseFilter() {
+        const materialCourseFilter = document.getElementById('materialCourseFilter');
+        if (!materialCourseFilter) return;
+
+        // 保存当前选择值
+        const currentValue = materialCourseFilter.value;
+
+        // 清空选项
+        materialCourseFilter.innerHTML = '';
+
+        // 添加"全部课程"选项（默认第一个）
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = '全部课程';
+        materialCourseFilter.appendChild(allOption);
+
+        // 添加课程选项
+        this.coursesData.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.courseName;
+            materialCourseFilter.appendChild(option);
+        });
+
+        // 恢复之前的选择值，如果无效则选择默认值（全部课程）
+        if (currentValue && this.coursesData.some(course => course.id === currentValue)) {
+            materialCourseFilter.value = currentValue;
+        } else {
+            materialCourseFilter.value = ''; // 默认选择"全部课程"
+        }
+    }
+
     // 渲染课件资源
     renderMaterials() {
         const materialsList = document.getElementById('materialsList');
+        const materialCourseFilter = document.getElementById('materialCourseFilter');
         if (!materialsList) return;
+
+        // 初始化课程过滤器选项
+        this.initializeMaterialCourseFilter();
+
+        // 获取当前选择的课程ID
+        const selectedCourseId = materialCourseFilter ? materialCourseFilter.value : '';
 
         materialsList.innerHTML = '';
 
-        this.coursesData.forEach(course => {
-            const materials = dataManager.getData('materials').filter(m => m.courseId === course.id);
+        // 根据过滤器显示课程资源
+        let coursesToShow = this.coursesData;
+        if (selectedCourseId) {
+            coursesToShow = this.coursesData.filter(course => course.id === selectedCourseId);
+        }
+
+        coursesToShow.forEach(course => {
+            const courseMaterials = dataManager.getData('courseMaterials').filter(cm => cm.courseId === course.id);
             
-            const courseMaterialsCard = this.createCourseMaterialsCard(course, materials);
+            const courseMaterialsCard = this.createCourseMaterialsCard(course, courseMaterials);
             materialsList.appendChild(courseMaterialsCard);
         });
+
+        // 如果没有资源，显示空状态
+        if (coursesToShow.length === 0 || (selectedCourseId && coursesToShow.length === 0)) {
+            materialsList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-content">
+                        <i class="fas fa-folder-open"></i>
+                        <h3>${selectedCourseId ? '该课程暂无课件资源' : '暂无课程资源'}</h3>
+                        <p>${selectedCourseId ? '点击"上传课件"为该课程添加资源' : '请选择课程或上传课件资源'}</p>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     // 创建课程课件卡片
-    createCourseMaterialsCard(course, materials) {
+    createCourseMaterialsCard(course, courseMaterials) {
         const card = document.createElement('div');
         card.className = 'materials-card';
+        
+        // 处理文件列表，提取文件名和信息
+        const filesList = this.processFilesList(courseMaterials);
         
         card.innerHTML = `
             <div class="materials-header">
@@ -889,18 +1107,18 @@ class TeacherDashboard {
                 </button>
             </div>
             <div class="materials-list">
-                ${materials.length > 0 ? materials.map(material => `
+                ${filesList.length > 0 ? filesList.map(file => `
                     <div class="material-item">
                         <div class="material-info">
-                            <i class="fas fa-file-${this.getFileIcon(material.type)}"></i>
+                            <i class="fas fa-file-${this.getFileIcon(file.extension)}"></i>
                             <div>
-                                <h4>${material.title}</h4>
-                                <p>大小: ${material.size} | 上传时间: ${new Date(material.uploadTime).toLocaleString()}</p>
+                                <h4>${file.name}</h4>
+                                <p>文件类型: ${file.extension.toUpperCase()} | 上传时间: ${new Date(file.uploadTime).toLocaleString()}</p>
                             </div>
                         </div>
                         <div class="material-actions">
-                            <button class="btn-sm btn-secondary" onclick="teacherDashboard.downloadMaterial('${material.id}')">下载</button>
-                            <button class="btn-sm btn-danger" onclick="teacherDashboard.deleteMaterial('${material.id}')">删除</button>
+                            <button class="btn-sm btn-secondary" onclick="teacherDashboard.downloadMaterial('${course.id}', '${file.path}', '${file.name}')">下载</button>
+                            <button class="btn-sm btn-danger" onclick="teacherDashboard.deleteMaterial('${course.id}', '${file.path}')">删除</button>
                         </div>
                     </div>
                 `).join('') : '<p class="no-materials">暂无课件</p>'}
@@ -910,16 +1128,125 @@ class TeacherDashboard {
         return card;
     }
 
-    // 获取文件图标
-    getFileIcon(type) {
-        const iconMap = {
-            'document': 'alt',
-            'pdf': 'pdf',
-            'video': 'video',
-            'audio': 'audio',
-            'image': 'image'
+    // 处理文件列表，提取文件名和信息
+    processFilesList(courseMaterials) {
+        const filesList = [];
+        
+        courseMaterials.forEach(cm => {
+            if (cm.files && Array.isArray(cm.files)) {
+                cm.files.forEach(fileData => {
+                    // 检查是否是新格式的文件数据（包含blobUrl）
+                    if (typeof fileData === 'object' && fileData.name) {
+                        // 新格式：包含完整文件信息的对象
+                        const extension = fileData.name.split('.').pop().toLowerCase();
+                        filesList.push({
+                            path: fileData.blobUrl, // 使用blobUrl作为下载路径
+                            name: fileData.name,
+                            displayName: fileData.name.split('.').slice(0, -1).join('.'),
+                            extension: extension,
+                            courseMaterialId: cm.id,
+                            uploadTime: fileData.uploadTime || cm.uploadTime || new Date().toISOString(),
+                            size: fileData.size,
+                            type: fileData.type
+                        });
+                    } else {
+                        // 兼容旧格式：纯文件路径字符串
+                        const fileInfo = this.extractFileInfo(fileData);
+                        filesList.push({
+                            ...fileInfo,
+                            courseMaterialId: cm.id,
+                            uploadTime: cm.uploadTime || new Date().toISOString()
+                        });
+                    }
+                });
+            }
+        });
+        
+        return filesList;
+    }
+
+    // 从文件路径提取文件信息
+    extractFileInfo(filePath) {
+        // 从路径中提取文件名
+        const fileName = filePath.split('/').pop();
+        
+        // 获取文件扩展名
+        const lastDotIndex = fileName.lastIndexOf('.');
+        const extension = lastDotIndex > -1 ? fileName.substring(lastDotIndex + 1) : '';
+        
+        // 获取文件名（不含扩展名）
+        const name = lastDotIndex > -1 ? fileName.substring(0, lastDotIndex) : fileName;
+        
+        return {
+            path: filePath,
+            name: fileName,
+            displayName: name,
+            extension: extension.toLowerCase()
         };
-        return iconMap[type] || 'alt';
+    }
+
+    // 获取文件图标
+    getFileIcon(extension) {
+        const iconMap = {
+            // 文档类型
+            'pdf': 'pdf',
+            'doc': 'word',
+            'docx': 'word',
+            'txt': 'alt',
+            'rtf': 'alt',
+            
+            // 表格类型
+            'xls': 'excel',
+            'xlsx': 'excel',
+            'csv': 'excel',
+            
+            // 演示文稿
+            'ppt': 'powerpoint',
+            'pptx': 'powerpoint',
+            
+            // 代码文件
+            'cpp': 'code',
+            'c': 'code',
+            'h': 'code',
+            'js': 'code',
+            'html': 'code',
+            'css': 'code',
+            'java': 'code',
+            'py': 'code',
+            'sql': 'code',
+            
+            // 图片类型
+            'jpg': 'image',
+            'jpeg': 'image',
+            'png': 'image',
+            'gif': 'image',
+            'bmp': 'image',
+            'svg': 'image',
+            'webp': 'image',
+            
+            // 音频类型
+            'mp3': 'audio',
+            'wav': 'audio',
+            'flac': 'audio',
+            'aac': 'audio',
+            'ogg': 'audio',
+            
+            // 视频类型
+            'mp4': 'video',
+            'avi': 'video',
+            'mkv': 'video',
+            'mov': 'video',
+            'wmv': 'video',
+            'flv': 'video',
+            
+            // 压缩文件
+            'zip': 'archive',
+            'rar': 'archive',
+            '7z': 'archive',
+            'tar': 'archive',
+            'gz': 'archive'
+        };
+        return iconMap[extension] || 'file';
     }
 
     // 渲染个人信息
@@ -1171,16 +1498,377 @@ class TeacherDashboard {
     }
 
     uploadMaterial(courseId) {
-        showMessage('上传课件功能正在开发中...', 'info');
+        this.showUploadMaterialModal(courseId);
     }
 
-    downloadMaterial(materialId) {
-        showMessage('下载课件功能正在开发中...', 'info');
+    // 关闭上传课件模态框
+    closeUploadMaterialModal() {
+        const modal = document.getElementById('materialModal');
+        if (!modal) return;
+
+        // 清理文件选择
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        if (uploadedFilesContainer) {
+            uploadedFilesContainer.innerHTML = '';
+            uploadedFilesContainer.selectedFiles = [];
+            // 重置文件计数器
+            this.updateFileCounter(0);
+        }
+
+        // 添加关闭动画
+        modal.querySelector('.modal-content').style.transform = 'scale(0.9)';
+        modal.querySelector('.modal-content').style.opacity = '0';
+
+        setTimeout(() => {
+            modal.classList.remove('active');
+        }, 200);
     }
 
-    deleteMaterial(materialId) {
-        if (confirm('确定要删除这个课件吗？')) {
-            showMessage('删除课件功能正在开发中...', 'info');
+    // 处理课件文件选择
+    handleMaterialFileSelection(files) {
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        if (!uploadedFilesContainer) return;
+
+        // 获取已存在的文件，如果不存在则初始化为空数组
+        const existingFiles = uploadedFilesContainer.selectedFiles || [];
+        
+        // 合并新选择的文件
+        const newFiles = Array.from(files);
+        const updatedFiles = [...existingFiles, ...newFiles];
+        
+        // 保存合并后的文件列表
+        uploadedFilesContainer.selectedFiles = updatedFiles;
+
+        // 更新文件计数器
+        this.updateFileCounter(updatedFiles.length);
+
+        // 只添加新文件到界面
+        newFiles.forEach((file, index) => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'uploaded-file-item';
+            const actualIndex = existingFiles.length + index; // 计算在合并后数组中的真实索引
+            
+            fileElement.innerHTML = `
+                <div class="file-info">
+                    <i class="fas fa-file-${this.getFileIcon(file.name.split('.').pop())}"></i>
+                    <div class="file-details">
+                        <h5>${file.name}</h5>
+                        <p>${this.formatFileSize(file.size)}</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-remove-file" onclick="this.parentElement.remove(); teacherDashboard.removeUploadedFile(${actualIndex})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            uploadedFilesContainer.appendChild(fileElement);
+        });
+    }
+
+    // 更新文件计数器
+    updateFileCounter(count) {
+        const fileCountElement = document.getElementById('fileCount');
+        if (fileCountElement) {
+            fileCountElement.textContent = count;
+        }
+    }
+
+    // 移除已选择的文件
+    removeUploadedFile(index) {
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        if (uploadedFilesContainer.selectedFiles) {
+            uploadedFilesContainer.selectedFiles.splice(index, 1);
+            // 重新渲染文件列表以更新索引
+            this.refreshUploadedFilesList();
+            // 更新文件计数器
+            this.updateFileCounter(uploadedFilesContainer.selectedFiles.length);
+        }
+    }
+
+    // 刷新已选择文件列表的显示
+    refreshUploadedFilesList() {
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        if (!uploadedFilesContainer) return;
+
+        const files = uploadedFilesContainer.selectedFiles || [];
+        uploadedFilesContainer.innerHTML = '';
+
+        // 更新文件计数器
+        this.updateFileCounter(files.length);
+
+        if (files.length === 0) {
+            return;
+        }
+
+        files.forEach((file, index) => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'uploaded-file-item';
+            fileElement.innerHTML = `
+                <div class="file-info">
+                    <i class="fas fa-file-${this.getFileIcon(file.name.split('.').pop())}"></i>
+                    <div class="file-details">
+                        <h5>${file.name}</h5>
+                        <p>${this.formatFileSize(file.size)}</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-remove-file" onclick="this.parentElement.remove(); teacherDashboard.removeUploadedFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            uploadedFilesContainer.appendChild(fileElement);
+        });
+    }
+
+    // 格式化文件大小
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 上传课件
+    uploadMaterials() {
+        const courseSelect = document.getElementById('materialCourse');
+        const courseId = courseSelect.value;
+
+        if (!courseId) {
+            showMessage('请选择课程', 'error');
+            return;
+        }
+
+        // 获取已选择的文件
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        const files = uploadedFilesContainer.selectedFiles || [];
+
+        if (files.length === 0) {
+            showMessage('请选择要上传的文件', 'error');
+            return;
+        }
+
+        // 验证文件大小
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        for (let file of files) {
+            if (file.size > maxSize) {
+                showMessage(`文件 "${file.name}" 超过50MB限制`, 'error');
+                return;
+            }
+        }
+
+        try {
+            // 获取或创建课程的课件记录
+            let courseMaterial = dataManager.getData('courseMaterials').find(cm => cm.courseId === courseId);
+            
+            if (!courseMaterial) {
+                // 创建新的课件记录
+                courseMaterial = {
+                    id: dataManager.generateId(),
+                    courseId: courseId,
+                    files: [],
+                    uploadTime: new Date().toISOString()
+                };
+                dataManager.data.courseMaterials.push(courseMaterial);
+            }
+
+            // 处理文件存储（创建Blob URL）
+            const fileData = [];
+            Array.from(files).forEach(file => {
+                // 创建Blob URL用于后续下载
+                const blobUrl = URL.createObjectURL(file);
+                
+                // 存储文件信息和Blob URL
+                fileData.push({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    blobUrl: blobUrl,
+                    uploadTime: new Date().toISOString()
+                });
+            });
+
+            // 更新课件记录
+            courseMaterial.files = [...courseMaterial.files, ...fileData];
+            courseMaterial.uploadTime = new Date().toISOString();
+
+            // 保存数据
+            dataManager.saveData();
+
+            // 重新渲染课件列表
+            this.renderMaterials();
+
+            // 关闭模态框
+            this.closeUploadMaterialModal();
+
+            showMessage(`成功上传${files.length}个课件文件`, 'success');
+
+            // 添加操作日志 
+            // @Todo addLog里上传课件要将课件名加上去，注意可能添加多个课件
+            const course = this.coursesData.find(c => c.id === courseId);
+            dataManager.addLog(this.userData.id, 'upload_material', `上传课件到课程: ${course.courseName}`);
+
+        } catch (error) {
+            console.error('上传课件失败:', error);
+            showMessage('上传课件失败：' + error.message, 'error');
+        }
+    }
+
+    // 显示上传课件模态框（带文件）
+    showUploadMaterialModalWithFiles(files) {
+        const modal = document.getElementById('materialModal');
+        if (!modal) return;
+
+        // 先显示模态框
+        this.showUploadMaterialModal();
+        
+        // 延迟处理文件，确保模态框已完全显示
+        setTimeout(() => {
+            this.handleMaterialFileSelection(files);
+        }, 100);
+    }
+
+    // 显示上传课件模态框
+    showUploadMaterialModal(courseId = null) {
+        const modal = document.getElementById('materialModal');
+        if (!modal) return;
+
+        // 重置表单
+        const form = document.getElementById('uploadMaterialForm');
+        if (form) {
+            form.reset();
+        }
+
+        // 设置课程选择器
+        this.initMaterialCourseSelector(courseId);
+
+        // 显示模态框
+        modal.classList.add('active');
+        
+        // 添加动画效果
+        setTimeout(() => {
+            modal.querySelector('.modal-content').style.transform = 'scale(1)';
+            modal.querySelector('.modal-content').style.opacity = '1';
+        }, 10);
+    }
+
+    // 初始化课件课程选择器
+    initMaterialCourseSelector(courseId = null) {
+        const courseSelect = document.getElementById('materialCourse');
+        if (!courseSelect) return;
+
+        // 清空并添加默认选项
+        courseSelect.innerHTML = '<option value="">选择课程</option>';
+
+        // 添加课程选项
+        this.coursesData.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = `${course.courseName} (${course.courseCode})`;
+            if (courseId && course.id === courseId) {
+                option.selected = true;
+            }
+            courseSelect.appendChild(option);
+        });
+    }
+
+    downloadMaterial(courseId, filePath, fileName) {
+        try {
+            const course = this.coursesData.find(c => c.id === courseId);
+            const downloadFileName = fileName || filePath.split('/').pop();
+            
+            // 在Live Server环境下实现真实的文件下载
+            showMessage(`开始下载课件: ${downloadFileName}`, 'info');
+            
+            // 创建真实的下载链接
+            const downloadLink = document.createElement('a');
+            
+            // 检查是否是Blob URL（以blob:开头）
+            if (filePath.startsWith('blob:')) {
+                // 新格式：使用Blob URL
+                downloadLink.href = filePath;
+                downloadLink.download = downloadFileName;
+            } else {
+                // 旧格式：使用相对路径
+                downloadLink.href = filePath;
+                downloadLink.download = downloadFileName;
+            }
+            
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+
+            // 添加操作日志
+            dataManager.addLog(this.userData.id, 'download_material', `下载课件: ${downloadFileName} (课程: ${course.courseName})`);
+
+        } catch (error) {
+            console.error('下载课件失败:', error);
+            showMessage('下载课件失败：' + error.message, 'error');
+        }
+    }
+
+    deleteMaterial(courseId, filePath) {
+        if (!confirm('确定要删除这个课件文件吗？此操作不可撤销！')) {
+            return;
+        }
+
+        try {
+            // 找到课程的课件记录
+            const courseMaterial = dataManager.getData('courseMaterials').find(cm => cm.courseId === courseId);
+            
+            if (!courseMaterial) {
+                showMessage('课件记录不存在', 'error');
+                return;
+            }
+
+            // 查找并移除指定文件（支持新格式和旧格式）
+            const fileName = filePath.split('/').pop();
+            let fileIndex = -1;
+            
+            // 先按文件路径查找（兼容旧格式）
+            fileIndex = courseMaterial.files.indexOf(filePath);
+            
+            if (fileIndex === -1) {
+                // 按文件名查找（新格式）
+                fileIndex = courseMaterial.files.findIndex(f => 
+                    typeof f === 'object' && f.name === fileName
+                );
+            }
+            
+            if (fileIndex > -1) {
+                const deletedFile = courseMaterial.files[fileIndex];
+                
+                // 如果是Blob URL，释放内存
+                if (deletedFile && typeof deletedFile === 'object' && deletedFile.blobUrl) {
+                    URL.revokeObjectURL(deletedFile.blobUrl);
+                }
+                
+                courseMaterial.files.splice(fileIndex, 1);
+                
+                // 如果文件列表为空，删除整个课件记录
+                if (courseMaterial.files.length === 0) {
+                    const cmIndex = dataManager.data.courseMaterials.indexOf(courseMaterial);
+                    if (cmIndex > -1) {
+                        dataManager.data.courseMaterials.splice(cmIndex, 1);
+                    }
+                }
+            }
+
+            // 保存数据
+            dataManager.saveData();
+
+            // 重新渲染课件列表
+            this.renderMaterials();
+
+            showMessage('课件删除成功', 'success');
+
+            // 添加操作日志
+            const course = this.coursesData.find(c => c.id === courseId);
+           
+            dataManager.addLog(this.userData.id, 'delete_material', `删除课件文件: ${fileName} (课程: ${course.courseName})`);
+
+        } catch (error) {
+            console.error('删除课件失败:', error);
+            showMessage('删除课件失败：' + error.message, 'error');
         }
     }
 

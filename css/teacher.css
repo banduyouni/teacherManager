@@ -1596,38 +1596,550 @@
     margin-bottom: 24px;
 }
 
-.teacher-dashboard .upload-area {
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
-    padding: 40px 20px;
-    text-align: center;
-    background: #f9fafb;
-    cursor: pointer;
-    transition: all 0.3s ease;
+/* 课件卡片样式 */
+.teacher-dashboard .materials-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
     margin-bottom: 24px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
-.teacher-dashboard .upload-area:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
+.teacher-dashboard .materials-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
 }
 
-.teacher-dashboard .upload-area i {
-    font-size: 48px;
-    color: #3b82f6;
-    margin-bottom: 16px;
+.teacher-dashboard .materials-card:hover::before {
+    transform: scaleX(1);
 }
 
-.teacher-dashboard .upload-area p {
+.teacher-dashboard .materials-card:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+}
+
+.teacher-dashboard .materials-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.teacher-dashboard .materials-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1f2937, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.teacher-dashboard .materials-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.teacher-dashboard .material-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .material-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.teacher-dashboard .material-item:hover {
+    background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+    border-color: #a5b4fc;
+    transform: translateX(4px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.12);
+}
+
+.teacher-dashboard .material-item:hover::before {
+    transform: scaleY(1);
+}
+
+.teacher-dashboard .material-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.teacher-dashboard .material-info i {
+    font-size: 28px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #6b7280;
+    transition: all 0.3s ease;
+}
+
+.teacher-dashboard .material-item:hover .material-info i {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #4f46e5;
+}
+
+.teacher-dashboard .material-info h4 {
     font-size: 16px;
     font-weight: 600;
     color: #1f2937;
-    margin: 0 0 8px 0;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.025em;
+    word-break: break-all;
+}
+
+.teacher-dashboard .material-info p {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.teacher-dashboard .file-type-badge {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    color: #0369a1;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #7dd3fc;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.teacher-dashboard .file-size-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid;
+}
+
+.teacher-dashboard .file-size-badge.size-unknown {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #64748b;
+    border-color: #cbd5e1;
+}
+
+.teacher-dashboard .file-size-badge.size-small {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #166534;
+    border-color: #86efac;
+}
+
+.teacher-dashboard .file-size-badge.size-medium {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    border-color: #fcd34d;
+}
+
+.teacher-dashboard .file-size-badge.size-large {
+    background: linear-gradient(135deg, #fed7aa, #fdba74);
+    color: #9a3412;
+    border-color: #fb923c;
+}
+
+.teacher-dashboard .file-size-badge.size-huge {
+    background: linear-gradient(135deg, #fecaca, #fca5a5);
+    color: #991b1b;
+    border-color: #f87171;
+}
+
+.teacher-dashboard .material-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.teacher-dashboard .material-actions .btn-sm {
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .material-actions .btn-sm::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s;
+}
+
+.teacher-dashboard .material-actions .btn-sm:hover::before {
+    left: 100%;
+}
+
+.teacher-dashboard .material-actions .btn-sm.btn-secondary {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+}
+
+.teacher-dashboard .material-actions .btn-sm.btn-secondary:hover {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(71, 85, 105, 0.3);
+}
+
+.teacher-dashboard .material-actions .btn-sm.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
+}
+
+/* 文件上传区域样式 - 美化版 */
+.teacher-dashboard .file-upload-area {
+    border: 3px dashed #e0e7ff;
+    border-radius: 16px;
+    padding: 50px 30px;
+    text-align: center;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .file-upload-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.teacher-dashboard .file-upload-area:hover::before {
+    transform: translateX(0);
+}
+
+.teacher-dashboard .file-upload-area:hover,
+.teacher-dashboard .file-upload-area.dragover {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.15);
+}
+
+.teacher-dashboard .file-upload-area.dragover {
+    border-color: #4f46e5;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    transform: scale(1.02);
+    box-shadow: 0 15px 35px rgba(79, 70, 229, 0.2);
+}
+
+.teacher-dashboard .upload-content i {
+    font-size: 56px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.teacher-dashboard .upload-content p {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1f2937, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 10px 0;
+}
+
+.teacher-dashboard .upload-content span {
+    font-size: 14px;
+    color: #6b7280;
+    background: rgba(107, 114, 128, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+.teacher-dashboard .uploaded-files {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.teacher-dashboard .uploaded-files::-webkit-scrollbar {
+    width: 6px;
+}
+
+.teacher-dashboard .uploaded-files::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.teacher-dashboard .uploaded-files::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.teacher-dashboard .uploaded-files::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.teacher-dashboard .uploaded-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .uploaded-file-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.teacher-dashboard .uploaded-file-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+}
+
+.teacher-dashboard .uploaded-file-item:hover::before {
+    transform: scaleY(1);
+}
+
+.teacher-dashboard .file-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+}
+
+.teacher-dashboard .file-info i {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #6b7280;
+}
+
+.teacher-dashboard .file-details h5 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+    word-break: break-all;
+}
+
+.teacher-dashboard .file-details p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.teacher-dashboard .btn-remove-file {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.teacher-dashboard     .btn-remove-file:hover {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border-color: #fca5a5;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    }
+
+/* 文件计数器样式 */
+.teacher-dashboard .upload-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.teacher-dashboard .upload-header label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.teacher-dashboard .file-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.teacher-dashboard .file-counter i {
+    font-size: 14px;
+}
+
+.teacher-dashboard .upload-area {
+    border: 3px dashed #e0e7ff;
+    border-radius: 20px;
+    padding: 60px 40px;
+    text-align: center;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .upload-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.teacher-dashboard .upload-area:hover::before {
+    transform: translateX(0);
+}
+
+.teacher-dashboard .upload-area:hover {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.15);
+}
+
+.teacher-dashboard .upload-area.dragover {
+    border-color: #4f46e5;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    transform: scale(1.03);
+    box-shadow: 0 20px 45px rgba(79, 70, 229, 0.2);
+}
+
+.teacher-dashboard .upload-area i {
+    font-size: 64px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 25px;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.2));
+}
+
+.teacher-dashboard .upload-area p {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1f2937, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.025em;
 }
 
 .teacher-dashboard .upload-area span {
-    font-size: 14px;
+    font-size: 15px;
     color: #6b7280;
+    background: rgba(107, 114, 128, 0.1);
+    padding: 6px 16px;
+    border-radius: 25px;
+    display: inline-block;
+    margin-top: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(107, 114, 128, 0.1);
 }
 
 .teacher-dashboard .materials-list {
@@ -1837,6 +2349,26 @@
     
     .teacher-dashboard .action-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .teacher-dashboard .upload-area {
+        padding: 40px 20px;
+        margin-bottom: 20px;
+    }
+
+    .teacher-dashboard .upload-area i {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+
+    .teacher-dashboard .upload-area p {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .teacher-dashboard .upload-area span {
+        font-size: 13px;
+        padding: 4px 12px;
     }
     
     .teacher-dashboard .header-actions {

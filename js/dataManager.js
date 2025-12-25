@@ -523,6 +523,19 @@ class DataManager {
                     gradedTime: null
                 }
             ],
+            coursePics: [
+                { id: 'coursePic001' , courseId: 'course001', picUrl: 'images/default1.jpg', level: 1},
+                { id: 'coursePic002' , courseId: 'course001', picUrl: 'images/default2.jpg', level: 2},
+                { id: 'coursePic003' , courseId: 'course004', picUrl: 'images/default2.jpg', level: 1}
+            ],
+            courseMaterials: [
+                { id: 'courseMaterial001' , courseId: 'course001' , files: ['files/file1.cpp', 'files/testList.cpp'] },
+                { id: 'courseMaterial002' , courseId: 'course004' , files: ['files/db.cpp', 'files/ER_Relationships.png'] }
+            ],
+            assignmentMaterials: [
+                { id: 'assignmentMaterial001' , assignmentId: 'assign001' , files: ['files/file1.cpp', 'files/testList.cpp'] },
+                { id: 'assignmentMaterial002' , assignmentId: 'assign004' , files: ['files/db.cpp', 'files/ER_Relationships.png'] }
+            ],
             grades: [],
             materials: [],
             logs: [],
