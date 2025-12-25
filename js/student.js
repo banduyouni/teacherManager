@@ -109,6 +109,14 @@ class StudentDashboard {
             });
         }
 
+        // 考试页面课程选择器
+        const examCourseSelect = document.getElementById('examCourseSelect');
+        if (examCourseSelect) {
+            examCourseSelect.addEventListener('change', () => {
+                this.loadCourseExams();
+            });
+        }
+
         // 课程详情模态框
         const closeCourseModal = document.getElementById('closeCourseModal');
         if (closeCourseModal) {
@@ -170,6 +178,12 @@ class StudentDashboard {
             case 'my-courses':
                 this.renderMyCourses();
                 break;
+            case 'assignments':
+                this.renderAssignmentsPage();
+                break;
+            case 'exams':
+                this.renderExamsPage();
+                break;
             case 'grades':
                 this.renderGrades();
                 break;
@@ -202,11 +216,11 @@ class StudentDashboard {
     calculatePendingTasks() {
         let pendingTasks = 0;
         this.enrollmentsData.forEach(enrollment => {
-            const assignments = dataManager.getCourseAssignments(enrollment.courseId);
+            const assignments = dataManager.getCourseHomework(enrollment.courseId);
             assignments.forEach(assignment => {
                 if (new Date(assignment.endTime) > new Date()) {
-                    const submission = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
-                    if (!submission || submission.length === 0) {
+                    const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
+                    if (submissions.length === 0) {
                         pendingTasks++;
                     }
                 }
@@ -234,7 +248,7 @@ class StudentDashboard {
         }
 
         // 如果没有手动设置，则基于作业完成情况计算
-        const assignments = dataManager.getCourseAssignments(courseId);
+        const assignments = dataManager.getCourseHomework(courseId);
         if (assignments.length === 0) return 0;
 
         let completedAssignments = 0;
@@ -314,7 +328,7 @@ class StudentDashboard {
     // 检查课程是否应该有成绩（基于学习进度）
     shouldHaveGrade(courseId) {
         const progress = this.calculateCourseProgress(courseId);
-        const assignments = dataManager.getCourseAssignments(courseId);
+        const assignments = dataManager.getCourseHomework(courseId);
         
         // 只有当进度达到80%以上，或者作业大部分完成时，才应该有成绩
         const completedCount = assignments.filter(assignment => {
@@ -615,7 +629,7 @@ class StudentDashboard {
 
         const teacher = dataManager.getUserById(course.teacherId);
         const department = dataManager.getData('departments').find(d => d.id === course.departmentId);
-        const assignments = dataManager.getCourseAssignments(courseId);
+        const assignments = dataManager.getCourseHomework(courseId);
 
         const modal = document.getElementById('courseDetailModal');
         const modalTitle = document.getElementById('modalCourseTitle');
@@ -661,16 +675,17 @@ class StudentDashboard {
                 </div>
                 
                 <div class="detail-section">
-                    <h4>作业安排</h4>
+                    <h4>作业与考试安排</h4>
                     <div class="assignments-list">
                         ${assignments.length > 0 ? assignments.map(assignment => `
                             <div class="assignment-item">
                                 <h5>${assignment.title}</h5>
                                 <p>类型: ${assignment.type === 'assignment' ? '作业' : '考试'}</p>
+                                ${assignment.type === 'exam' ? `<p>考试时长: ${assignment.duration || 120}分钟</p>` : ''}
                                 <p>满分: ${assignment.maxScore}分</p>
                                 <p>截止时间: ${new Date(assignment.endTime).toLocaleString()}</p>
                             </div>
-                        `).join('') : '<p>暂无作业安排</p>'}
+                        `).join('') : '<p>暂无作业和考试安排</p>'}
                     </div>
                 </div>
                 
@@ -774,7 +789,7 @@ class StudentDashboard {
 
             const teacher = dataManager.getUserById(course.teacherId);
             const progress = this.calculateCourseProgress(course.id);
-            const assignments = dataManager.getCourseAssignments(course.id);
+            const assignments = dataManager.getCourseHomework(course.id);
 
             const myCourseCard = document.createElement('div');
             myCourseCard.className = 'my-course-card';
@@ -828,8 +843,1709 @@ class StudentDashboard {
 
     // 查看作业
     viewAssignments(courseId) {
-        // 切换到作业页面或显示作业详情
-        showMessage('正在开发中...', 'info');
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) return;
+
+        // 切换到作业管理页面
+        this.switchPage('assignments');
+        
+        // 设置选中的课程
+        setTimeout(() => {
+            const courseSelect = document.getElementById('assignmentCourseSelect');
+            if (courseSelect) {
+                courseSelect.value = courseId;
+                this.loadCourseAssignments();
+            }
+        }, 100);
+    }
+
+    // 显示作业列表模态框
+    showAssignmentsModal(course, assignments) {
+        const modal = document.createElement('div');
+        modal.className = 'assignments-modal-overlay';
+        modal.innerHTML = `
+            <div class="assignments-modal">
+                <div class="assignments-header">
+                    <h3>📚 ${course.courseName} - 作业列表</h3>
+                    <button class="close-btn" onclick="this.closest('.assignments-modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="assignments-content">
+                    <div class="assignments-list">
+                        ${assignments.map(assignment => this.createAssignmentItem(assignment)).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // 创建作业项HTML
+    createAssignmentItem(assignment) {
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
+        const submission = submissions.length > 0 ? submissions[0] : null;
+        const isOverdue = new Date(assignment.endTime) < new Date();
+        const hasSubmission = submissions.length > 0;
+        const isSubmitted = hasSubmission;
+        const isGraded = hasSubmission && submission && submission.status === 'graded';
+
+        // 计算剩余时间
+        const timeRemaining = this.getTimeRemaining(assignment.endTime);
+        
+        return `
+            <div class="assignment-item ${isOverdue ? 'overdue' : ''} ${isSubmitted ? 'submitted' : ''}">
+                <div class="assignment-main">
+                    <div class="assignment-info">
+                        <h4 class="assignment-title">
+                            ${assignment.title}
+                            ${isGraded ? '<span class="graded-badge">已批改</span>' : 
+                              isSubmitted ? '<span class="submitted-badge">已提交</span>' : 
+                              isOverdue ? '<span class="overdue-badge">已逾期</span>' : 
+                              '<span class="pending-badge">待提交</span>'}
+                        </h4>
+                        <p class="assignment-description">${assignment.description}</p>
+                        <div class="assignment-meta">
+                            <span class="assignment-type">
+                                <i class="fas fa-${assignment.type === 'exam' ? 'file-alt' : 'edit'}"></i>
+                                ${assignment.type === 'exam' ? '考试' : '作业'}
+                            </span>
+                            <span class="assignment-score">
+                                <i class="fas fa-star"></i>
+                                ${assignment.maxScore}分
+                            </span>
+                            <span class="assignment-time ${isOverdue ? 'overdue' : ''}">
+                                <i class="fas fa-clock"></i>
+                                截止: ${new Date(assignment.endTime).toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="assignment-actions">
+                        ${isGraded ? `
+                            <button class="btn-sm btn-success" onclick="studentDashboard.viewGradeDetail('${submission.id}')">
+                                <i class="fas fa-eye"></i> 查看成绩
+                            </button>
+                            <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${assignment.id}')">
+                                <i class="fas fa-file-alt"></i> 查看提交
+                            </button>
+                        ` : isSubmitted ? `
+                            <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${assignment.id}')">
+                                <i class="fas fa-file-alt"></i> 查看提交
+                            </button>
+                        ` : isOverdue ? `
+                            <button class="btn-sm btn-danger disabled">
+                                <i class="fas fa-times-circle"></i> 已逾期
+                            </button>
+                        ` : `
+                            <button class="btn-sm btn-primary" onclick="studentDashboard.submitAssignment('${assignment.id}')">
+                                <i class="fas fa-upload"></i> 提交作业
+                            </button>
+                        `}
+                    </div>
+                </div>
+                ${isGraded ? `
+                    <div class="grade-summary">
+                        <div class="grade-display">
+                            <span class="score-value">${submission.score}</span>
+                            <span class="score-total">/ ${assignment.maxScore}</span>
+                        </div>
+                        <div class="grade-feedback">
+                            <strong>教师评语：</strong>
+                            <p>${submission.feedback || '暂无评语'}</p>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // 计算剩余时间
+    getTimeRemaining(endTime) {
+        const now = new Date();
+        const end = new Date(endTime);
+        const diff = end - now;
+
+        if (diff <= 0) return '已截止';
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (days > 0) return `剩余 ${days}天${hours}小时`;
+        if (hours > 0) return `剩余 ${hours}小时${minutes}分钟`;
+        return `剩余 ${minutes}分钟`;
+    }
+
+    // 提交作业
+    submitAssignment(assignmentId, isResubmission = false) {
+        const assignment = dataManager.getData('assignments').find(a => a.id === assignmentId);
+        if (!assignment) return;
+
+        this.showSubmissionModal(assignment, isResubmission);
+    }
+
+    // 显示提交作业模态框
+    showSubmissionModal(assignment, isResubmission = false) {
+        const modal = document.createElement('div');
+        modal.className = 'submission-modal-overlay';
+        modal.innerHTML = `
+            <div class="submission-modal">
+                <div class="submission-header">
+                    <h3>📝 ${isResubmission ? '重新提交作业' : '提交作业'} - ${assignment.title}</h3>
+                    <button class="close-btn" onclick="this.closest('.submission-modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="submission-content">
+                    <div class="assignment-info">
+                        <h4>${assignment.title}</h4>
+                        <p>${assignment.description}</p>
+                        <div class="submission-deadline">
+                            <strong>截止时间：</strong>
+                            <span class="deadline-time ${new Date(assignment.endTime) < new Date() ? 'overdue' : ''}">
+                                ${new Date(assignment.endTime).toLocaleString()}
+                            </span>
+                        </div>
+                        <div class="submission-score">
+                            <strong>满分：</strong>${assignment.maxScore}分
+                        </div>
+                    </div>
+                    
+                    <form class="submission-form" id="submissionForm">
+                        <div class="form-group">
+                            <label for="submissionContent">作业内容</label>
+                            <textarea id="submissionContent" 
+                                      placeholder="请描述您的作业完成情况、主要思路等..." 
+                                      rows="6" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>附件文件（可选）</label>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.zip,.rar,.cpp,.c,.java,.py,.js" style="display: none;">
+                                <div class="file-drop-zone">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>拖拽文件到这里或点击选择文件</p>
+                                    <small>支持 PDF, DOC, ZIP, RAR, 代码文件等（最多5个文件，单文件不超过10MB）</small>
+                                </div>
+                                <div class="file-list" id="fileList"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="this.closest('.submission-modal-overlay').remove()">
+                                取消
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-paper-plane"></i> 提交作业
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        this.setupFileUpload();
+        this.setupSubmissionForm(assignment.id, isResubmission);
+        
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // 设置文件上传
+    setupFileUpload() {
+        const fileInput = document.getElementById('fileInput');
+        const fileDropZone = document.querySelector('.file-drop-zone');
+        const fileList = document.getElementById('fileList');
+        
+        // 初始化当前作业文件数组
+        this.currentAssignmentFiles = [];
+
+        fileDropZone.addEventListener('click', () => fileInput.click());
+        
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files, this.currentAssignmentFiles, fileList);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            this.handleFiles(e.target.files, this.currentAssignmentFiles, fileList);
+        });
+    }
+
+    // 处理文件
+    async handleFiles(files, uploadedFiles, fileList) {
+        for (const file of Array.from(files)) {
+            if (uploadedFiles.length >= 5) {
+                showMessage('最多只能上传5个文件', 'warning');
+                continue;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                showMessage(`文件 ${file.name} 超过10MB限制`, 'warning');
+                continue;
+            }
+            
+            // 生成临时路径并存储文件
+            const tempPath = dataManager.generateTempPath(file.name);
+            try {
+                await dataManager.storeTempFile(file, tempPath);
+                uploadedFiles.push({
+                    file: file,
+                    tempPath: tempPath
+                });
+            } catch (error) {
+                console.error('文件存储失败:', error);
+                showMessage(`文件 ${file.name} 存储失败`, 'error');
+            }
+        }
+        
+        this.updateFileList(uploadedFiles, fileList);
+    }
+
+    // 更新文件列表显示
+    updateFileList(files, fileList) {
+        fileList.innerHTML = files.map((fileItem, index) => {
+            const file = fileItem.file || fileItem; // 兼容旧格式
+            const tempPath = fileItem.tempPath;
+            return `
+                <div class="file-item">
+                    <i class="fas fa-file"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${this.formatFileSize(file.size)}</span>
+                    <button type="button" class="file-download" onclick="studentDashboard.downloadTempFile('${tempPath}')" title="下载文件">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button type="button" class="file-remove" onclick="studentDashboard.removeFile(${index})" title="移除文件">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 格式化文件大小
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 移除文件
+    removeFile(index) {
+        const fileList = document.getElementById('fileList');
+        
+        // 获取当前文件列表（这里需要从全局或DOM中获取）
+        if (!this.currentAssignmentFiles) {
+            this.currentAssignmentFiles = [];
+        }
+        
+        const removedFile = this.currentAssignmentFiles[index];
+        
+        // 删除临时文件
+        if (removedFile && removedFile.tempPath) {
+            dataManager.removeTempFile(removedFile.tempPath);
+        }
+        
+        // 从数组中移除
+        this.currentAssignmentFiles.splice(index, 1);
+        
+        // 更新显示
+        this.updateFileList(this.currentAssignmentFiles, fileList);
+    }
+
+    // 设置提交表单
+    setupSubmissionForm(assignmentId, isResubmission = false) {
+        const form = document.getElementById('submissionForm');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const content = document.getElementById('submissionContent').value.trim();
+            
+            if (!content && this.currentAssignmentFiles.length === 0) {
+                showMessage('请填写作业内容或上传文件', 'warning');
+                return;
+            }
+            
+            // 使用临时文件数组而不是input.files
+            const files = this.currentAssignmentFiles;
+            
+            this.processSubmission(assignmentId, content, files, isResubmission);
+        });
+    }
+
+    // 处理作业提交
+    async processSubmission(assignmentId, content, files, isResubmission = false) {
+        const assignment = dataManager.getData('assignments').find(a => a.id === assignmentId);
+        
+        if (new Date(assignment.endTime) < new Date()) {
+            showMessage('作业已截止，无法提交', 'error');
+            return;
+        }
+
+        // 如果是重新提交，先删除旧的提交记录
+        if (isResubmission) {
+            const data = dataManager.getData();
+            const submissionIndex = data.submissions.findIndex(s => 
+                s.assignmentId === assignmentId && s.studentId === this.userData.id
+            );
+            
+            if (submissionIndex !== -1) {
+                data.submissions.splice(submissionIndex, 1);
+            }
+        }
+
+        // 处理文件：将文件保存为临时路径
+        const fileTempPaths = [];
+        const fileInfos = [];
+        
+        for (const fileItem of files) {
+            if (fileItem.tempPath) {
+                // 已经是临时路径格式
+                fileTempPaths.push(fileItem.tempPath);
+                fileInfos.push({
+                    tempPath: fileItem.tempPath,
+                    originalName: fileItem.file.name,
+                    size: fileItem.file.size
+                });
+            } else {
+                // 兼容旧格式，转换为临时路径
+                const tempPath = dataManager.generateTempPath(file.name);
+                try {
+                    await dataManager.storeTempFile(file, tempPath);
+                    fileTempPaths.push(tempPath);
+                    fileInfos.push({
+                        tempPath: tempPath,
+                        originalName: file.name,
+                        size: file.size
+                    });
+                } catch (error) {
+                    console.error('文件存储失败:', error);
+                    showMessage(`文件 ${file.name} 存储失败`, 'error');
+                    return;
+                }
+            }
+        }
+
+        // 创建提交记录
+        const submission = {
+            id: dataManager.generateId(),
+            assignmentId: assignmentId,
+            studentId: this.userData.id,
+            submittedTime: new Date().toISOString(),
+            content: content,
+            files: fileInfos, // 使用包含临时路径的文件信息
+            status: 'pending',
+            score: null,
+            feedback: null,
+            gradedTime: null
+        };
+
+        // 保存到数据管理器
+        const data = dataManager.getData();
+        if (!data.submissions) {
+            data.submissions = [];
+        }
+        data.submissions.push(submission);
+        dataManager.saveData();
+
+        // 关闭模态框
+        document.querySelector('.submission-modal-overlay')?.remove();
+        
+        // 刷新界面
+        this.renderMyCourses();
+        
+        // 如果当前在作业页面，也刷新作业页面
+        if (this.currentPage === 'assignments') {
+            this.renderAssignmentsPage();
+        }
+        
+        const successMessage = isResubmission ? 
+            `✅ 作业"${assignment.title}"重新提交成功！` : 
+            `✅ 作业"${assignment.title}"提交成功！`;
+        showMessage(successMessage, 'success');
+        
+        // 记录日志
+        dataManager.addLog(this.userData.id, 'assignment_submit', 
+            `学生 ${this.userData.name} 提交了作业 ${assignment.title}`);
+    }
+
+    // 查看提交详情
+    viewSubmission(assignmentId) {
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignmentId);
+        if (submissions.length === 0) {
+            showMessage('未找到提交记录', 'error');
+            return;
+        }
+
+        const submission = submissions[0];
+        const assignment = dataManager.getData('assignments').find(a => a.id === assignmentId);
+        
+        this.showSubmissionDetailModal(submission, assignment);
+    }
+
+    // 显示提交详情模态框
+    showSubmissionDetailModal(submission, assignment) {
+        const modal = document.createElement('div');
+        modal.className = 'submission-detail-modal-overlay';
+        modal.innerHTML = `
+            <div class="submission-detail-modal">
+                <div class="detail-header">
+                    <h3>📄 提交详情 - ${assignment.title}</h3>
+                    <button class="close-btn" onclick="this.closest('.submission-detail-modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="detail-content">
+                    <div class="submission-info">
+                        <div class="info-row">
+                            <label>提交时间：</label>
+                            <span>${new Date(submission.submittedTime).toLocaleString()}</span>
+                        </div>
+                        <div class="info-row">
+                            <label>作业状态：</label>
+                            <span class="status-badge ${submission.status}">
+                                ${this.getStatusText(submission.status)}
+                            </span>
+                        </div>
+                        ${submission.score !== null ? `
+                            <div class="info-row">
+                                <label>得分：</label>
+                                <span class="score-display">${submission.score} / ${assignment.maxScore}</span>
+                            </div>
+                        ` : ''}
+                        ${submission.feedback ? `
+                            <div class="info-row">
+                                <label>教师评语：</label>
+                                <div class="feedback-content">${submission.feedback}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="submission-content-section">
+                        <h4>作业内容</h4>
+                        <div class="content-display">
+                            ${submission.content || '无文字内容'}
+                        </div>
+                    </div>
+                    
+                    ${submission.files && submission.files.length > 0 ? `
+                        <div class="submission-files-section">
+                            <h4>附件文件</h4>
+                            <div class="files-list">
+                                ${submission.files.map(file => {
+                                    // 检查是否是新的临时路径格式
+                                    if (typeof file === 'object' && file.tempPath) {
+                                        return `
+                                            <div class="file-item downloadable">
+                                                <i class="fas fa-file"></i>
+                                                <span class="file-name">${file.originalName}</span>
+                                                <span class="file-size">${this.formatFileSize(file.size)}</span>
+                                                <button class="file-download-btn" onclick="studentDashboard.downloadSubmissionFile('${file.tempPath}', '${file.originalName}')" title="下载文件">
+                                                    <i class="fas fa-download"></i>
+                                                    下载
+                                                </button>
+                                            </div>
+                                        `;
+                                    } else if (typeof file === 'string') {
+                                        // 兼容旧格式，只显示文件名（无下载功能）
+                                        return `
+                                            <div class="file-item">
+                                                <i class="fas fa-file"></i>
+                                                <span class="file-name">${file}</span>
+                                                <span class="file-status">已上传</span>
+                                            </div>
+                                        `;
+                                    }
+                                    return '';
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="detail-actions">
+                        <button class="btn-secondary" onclick="this.closest('.submission-detail-modal-overlay').remove()">
+                            关闭
+                        </button>
+                        ${submission.status === 'pending' ? `
+                            <button class="btn-primary" onclick="studentDashboard.resubmitAssignment('${assignment.id}')">
+                                <i class="fas fa-redo"></i> 重新提交
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // 获取状态文本
+    getStatusText(status) {
+        const statusMap = {
+            'pending': '待批改',
+            'graded': '已批改',
+            'rejected': '已拒绝'
+        };
+        return statusMap[status] || status;
+    }
+
+    // 重新提交作业
+    resubmitAssignment(assignmentId) {
+        if (confirm('确定要重新提交作业吗？这将覆盖之前的提交记录。')) {
+            // 关闭详情模态框
+            document.querySelector('.submission-detail-modal-overlay')?.remove();
+            
+            // 打开提交模态框，标记为重新提交
+            this.submitAssignment(assignmentId, true);
+        }
+    }
+
+    // 开始考试
+    startExam(examId, isResubmission = false) {
+        const exam = dataManager.getData('assignments').find(a => a.id === examId);
+        if (!exam) return;
+
+        // 检查是否在考试时间内
+        const now = new Date();
+        const startTime = new Date(exam.startTime || exam.endTime);
+        const endTime = new Date(exam.endTime);
+
+        if (now > endTime) {
+            showMessage('考试已结束，无法开始', 'error');
+            return;
+        }
+
+        this.showExamModal(exam, isResubmission);
+    }
+
+    // 重新提交考试
+    resubmitExam(examId) {
+        if (confirm('确定要重新提交考试吗？这将覆盖之前的提交记录。')) {
+            // 关闭详情模态框
+            document.querySelector('.submission-detail-modal-overlay')?.remove();
+            
+            // 打开考试模态框，标记为重新提交
+            this.startExam(examId, true);
+        }
+    }
+
+    // 显示考试模态框
+    showExamModal(exam, isResubmission = false) {
+        const modal = document.createElement('div');
+        modal.className = 'exam-modal-overlay';
+        modal.innerHTML = `
+            <div class="exam-modal">
+                <div class="exam-header">
+                    <h3>📝 ${isResubmission ? '重新参加考试' : '参加考试'} - ${exam.title}</h3>
+                    <button class="close-btn" onclick="studentDashboard.closeExamModal('${exam.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="exam-content">
+                    <div class="exam-info">
+                        <h4>${exam.title}</h4>
+                        <p>${exam.description}</p>
+                        <div class="exam-details">
+                            <div class="exam-time">
+                                <strong>考试时长：</strong>
+                                <span class="duration">${exam.duration || 120}分钟</span>
+                            </div>
+                            <div class="exam-deadline">
+                                <strong>截止时间：</strong>
+                                <span class="deadline-time ${new Date(exam.endTime) < new Date() ? 'overdue' : ''}">
+                                    ${new Date(exam.endTime).toLocaleString()}
+                                </span>
+                            </div>
+                            <div class="exam-score">
+                                <strong>满分：</strong>${exam.maxScore}分
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="exam-timer" id="examTimer">
+                        <div class="timer-display">
+                            <i class="fas fa-clock"></i>
+                            <span id="timerText">准备就绪</span>
+                        </div>
+                        <div class="timer-progress">
+                            <div class="progress-bar" id="timerProgress"></div>
+                        </div>
+                    </div>
+                    
+                    <form class="exam-form" id="examForm">
+                        <div class="form-group">
+                            <label for="examContent">考试答案</label>
+                            <textarea id="examContent" 
+                                      placeholder="请在此输入您的考试答案..." 
+                                      rows="12" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>附件文件（可选）</label>
+                            <div class="file-upload-area" id="examFileUploadArea">
+                                <input type="file" id="examFileInput" multiple accept=".pdf,.doc,.docx,.zip,.rar,.cpp,.c,.java,.py,.js,.txt" style="display: none;">
+                                <div class="file-drop-zone">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>拖拽文件到这里或点击选择文件</p>
+                                    <small>支持 PDF, DOC, ZIP, 代码文件等（最多5个文件，单文件不超过10MB）</small>
+                                </div>
+                                <div class="file-list" id="examFileList"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="studentDashboard.closeExamModal('${exam.id}')">
+                                取消
+                            </button>
+                            <button type="submit" class="btn-primary" id="submitExamBtn">
+                                <i class="fas fa-paper-plane"></i> 提交考试
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        this.setupExamFileUpload();
+        this.setupExamForm(exam.id, isResubmission);
+        this.startExamTimer(exam.duration || 120, exam.id);
+        
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeExamModal(exam.id);
+            }
+        });
+    }
+
+    // 关闭考试模态框
+    closeExamModal(examId) {
+        const modal = document.querySelector('.exam-modal-overlay');
+        if (modal) {
+            // 停止计时器
+            if (this.examTimer) {
+                clearInterval(this.examTimer);
+                this.examTimer = null;
+            }
+            modal.remove();
+        }
+    }
+
+    // 设置考试文件上传
+    setupExamFileUpload() {
+        const fileInput = document.getElementById('examFileInput');
+        const fileDropZone = document.querySelector('#examFileUploadArea .file-drop-zone');
+        const fileList = document.getElementById('examFileList');
+        
+        // 初始化当前考试文件数组
+        this.currentExamFiles = [];
+
+        fileDropZone.addEventListener('click', () => fileInput.click());
+        
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            this.handleExamFiles(e.dataTransfer.files, this.currentExamFiles, fileList);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            this.handleExamFiles(e.target.files, this.currentExamFiles, fileList);
+        });
+    }
+
+    // 处理考试文件
+    async handleExamFiles(files, uploadedFiles, fileList) {
+        for (const file of Array.from(files)) {
+            if (uploadedFiles.length >= 5) {
+                showMessage('最多只能上传5个文件', 'warning');
+                continue;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                showMessage(`文件 ${file.name} 超过10MB限制`, 'warning');
+                continue;
+            }
+            
+            // 生成临时路径并存储文件
+            const tempPath = dataManager.generateTempPath(file.name);
+            try {
+                await dataManager.storeTempFile(file, tempPath);
+                uploadedFiles.push({
+                    file: file,
+                    tempPath: tempPath
+                });
+            } catch (error) {
+                console.error('文件存储失败:', error);
+                showMessage(`文件 ${file.name} 存储失败`, 'error');
+            }
+        }
+        
+        this.updateExamFileList(uploadedFiles, fileList);
+    }
+
+    // 更新考试文件列表显示
+    updateExamFileList(files, fileList) {
+        fileList.innerHTML = files.map((fileItem, index) => {
+            const file = fileItem.file || fileItem; // 兼容旧格式
+            const tempPath = fileItem.tempPath;
+            return `
+                <div class="file-item">
+                    <i class="fas fa-file"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${this.formatFileSize(file.size)}</span>
+                    <button type="button" class="file-download" onclick="studentDashboard.downloadTempFile('${tempPath}')" title="下载文件">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button type="button" class="file-remove" onclick="studentDashboard.removeExamFile(${index})" title="移除文件">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 移除考试文件
+    removeExamFile(index) {
+        const fileInput = document.getElementById('examFileInput');
+        const fileList = document.getElementById('examFileList');
+        
+        // 获取当前文件列表（这里需要从全局或DOM中获取）
+        if (!this.currentExamFiles) {
+            this.currentExamFiles = [];
+        }
+        
+        const removedFile = this.currentExamFiles[index];
+        
+        // 删除临时文件
+        if (removedFile && removedFile.tempPath) {
+            dataManager.removeTempFile(removedFile.tempPath);
+        }
+        
+        // 从数组中移除
+        this.currentExamFiles.splice(index, 1);
+        
+        // 更新显示
+        this.updateExamFileList(this.currentExamFiles, fileList);
+    }
+
+    // 下载临时文件
+    downloadTempFile(tempPath) {
+        dataManager.downloadTempFile(tempPath);
+    }
+
+    // 下载提交的文件
+    downloadSubmissionFile(tempPath, originalName) {
+        dataManager.downloadTempFile(tempPath);
+    }
+
+    // 设置考试表单
+    setupExamForm(examId, isResubmission = false) {
+        const form = document.getElementById('examForm');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const content = document.getElementById('examContent').value.trim();
+            
+            if (!content && this.currentExamFiles.length === 0) {
+                showMessage('请填写考试答案或上传文件', 'warning');
+                return;
+            }
+            
+            // 使用临时文件数组而不是input.files
+            const files = this.currentExamFiles;
+            
+            this.processExamSubmission(examId, content, files, isResubmission);
+        });
+    }
+
+    // 开始考试计时器
+    startExamTimer(durationMinutes, examId) {
+        let totalSeconds = durationMinutes * 60;
+        this.examStartTime = new Date();
+        
+        const timerElement = document.getElementById('timerText');
+        const progressElement = document.getElementById('timerProgress');
+        
+        this.examTimer = setInterval(() => {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            const timeString = hours > 0 ? 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}` :
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            timerElement.textContent = timeString;
+            
+            // 更新进度条
+            const progress = ((durationMinutes * 60 - totalSeconds) / (durationMinutes * 60)) * 100;
+            progressElement.style.width = `${progress}%`;
+            
+            // 时间警告
+            if (totalSeconds === 300) { // 最后5分钟
+                timerElement.classList.add('warning');
+                showMessage('⚠️ 考试还剩5分钟，请及时提交！', 'warning');
+            }
+            
+            if (totalSeconds === 60) { // 最后1分钟
+                timerElement.classList.add('danger');
+                showMessage('⚠️ 考试还剩1分钟！', 'error');
+            }
+            
+            if (totalSeconds <= 0) {
+                clearInterval(this.examTimer);
+                this.examTimer = null;
+                this.autoSubmitExam(examId);
+                return;
+            }
+            
+            totalSeconds--;
+        }, 1000);
+    }
+
+    // 自动提交考试
+    autoSubmitExam(examId) {
+        const content = document.getElementById('examContent')?.value.trim() || '时间到，自动提交';
+        const fileInput = document.getElementById('examFileInput');
+        const files = fileInput ? Array.from(fileInput.files) : [];
+        
+        this.processExamSubmission(examId, content, files, false);
+        showMessage('⏰ 考试时间到，已自动提交', 'info');
+    }
+
+    // 处理考试提交
+    async processExamSubmission(examId, content, files, isResubmission = false) {
+        const exam = dataManager.getData('assignments').find(a => a.id === examId);
+        
+        if (new Date(exam.endTime) < new Date() && !isResubmission) {
+            showMessage('考试已结束，无法提交', 'error');
+            return;
+        }
+
+        // 停止计时器
+        if (this.examTimer) {
+            clearInterval(this.examTimer);
+            this.examTimer = null;
+        }
+
+        // 如果是重新提交，先删除旧的提交记录
+        if (isResubmission) {
+            const data = dataManager.getData();
+            const submissionIndex = data.submissions.findIndex(s => 
+                s.assignmentId === examId && s.studentId === this.userData.id
+            );
+            
+            if (submissionIndex !== -1) {
+                data.submissions.splice(submissionIndex, 1);
+            }
+        }
+
+        // 计算实际用时
+        const timeUsed = this.examStartTime ? 
+            Math.round((new Date() - this.examStartTime) / 1000) : 0;
+
+        // 处理文件：将文件保存为临时路径
+        const fileTempPaths = [];
+        const fileInfos = [];
+        
+        for (const fileItem of files) {
+            if (fileItem.tempPath) {
+                // 已经是临时路径格式
+                fileTempPaths.push(fileItem.tempPath);
+                fileInfos.push({
+                    tempPath: fileItem.tempPath,
+                    originalName: fileItem.file.name,
+                    size: fileItem.file.size
+                });
+            } else {
+                // 兼容旧格式，转换为临时路径
+                const tempPath = dataManager.generateTempPath(file.name);
+                try {
+                    await dataManager.storeTempFile(file, tempPath);
+                    fileTempPaths.push(tempPath);
+                    fileInfos.push({
+                        tempPath: tempPath,
+                        originalName: file.name,
+                        size: file.size
+                    });
+                } catch (error) {
+                    console.error('文件存储失败:', error);
+                    showMessage(`文件 ${file.name} 存储失败`, 'error');
+                    return;
+                }
+            }
+        }
+
+        // 创建提交记录
+        const submission = {
+            id: dataManager.generateId(),
+            assignmentId: examId,
+            studentId: this.userData.id,
+            submittedTime: new Date().toISOString(),
+            content: content,
+            files: fileInfos, // 使用包含临时路径的文件信息
+            status: 'pending',
+            score: null,
+            feedback: null,
+            gradedTime: null,
+            timeUsed: timeUsed, // 考试用时（秒）
+            submissionType: 'exam' // 标记为考试提交
+        };
+
+        // 保存到数据管理器
+        const data = dataManager.getData();
+        if (!data.submissions) {
+            data.submissions = [];
+        }
+        data.submissions.push(submission);
+        dataManager.saveData();
+
+        // 关闭模态框
+        document.querySelector('.exam-modal-overlay')?.remove();
+        
+        // 刷新界面
+        this.renderMyCourses();
+        
+        // 如果当前在考试页面，也刷新考试页面
+        if (this.currentPage === 'exams') {
+            this.renderExamsPage();
+        }
+        
+        const successMessage = isResubmission ? 
+            `✅ 考试"${exam.title}"重新提交成功！` : 
+            `✅ 考试"${exam.title}"提交成功！`;
+        showMessage(successMessage, 'success');
+        
+        // 记录日志
+        dataManager.addLog(this.userData.id, 'exam_submit', 
+            `学生 ${this.userData.name} 提交了考试 ${exam.title}`);
+    }
+
+    // 渲染作业管理页面
+    renderAssignmentsPage() {
+        this.populateCourseSelector();
+        this.setupAssignmentFilters();
+        
+        // 如果已经有选中的课程，重新加载作业
+        const courseSelect = document.getElementById('assignmentCourseSelect');
+        if (courseSelect && courseSelect.value) {
+            this.loadCourseAssignments();
+        }
+    }
+
+    // 填充课程选择器
+    populateCourseSelector() {
+        const courseSelect = document.getElementById('assignmentCourseSelect');
+        if (!courseSelect) return;
+
+        courseSelect.innerHTML = '<option value="">请选择课程</option>';
+
+        this.enrollmentsData.forEach(enrollment => {
+            const course = this.coursesData.find(c => c.id === enrollment.courseId);
+            if (!course) return;
+
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = `${course.courseName} (${course.courseCode})`;
+            courseSelect.appendChild(option);
+        });
+    }
+
+    // 加载选中课程的作业
+    loadCourseAssignments() {
+        const courseSelect = document.getElementById('assignmentCourseSelect');
+        const courseId = courseSelect.value;
+        
+        if (!courseId) {
+            this.hideAssignmentsContent();
+            return;
+        }
+
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) return;
+
+        const assignments = dataManager.getCourseHomework(courseId);
+        
+        // 更新页面标题
+        const courseTitle = document.getElementById('selectedCourseTitle');
+        if (courseTitle) {
+            courseTitle.textContent = `${course.courseName} - 作业列表`;
+        }
+
+        if (assignments.length === 0) {
+            this.showNoAssignments();
+            return;
+        }
+
+        this.showAssignmentsContent();
+        this.renderAssignmentsGrid(assignments);
+        this.updateAssignmentStats(assignments);
+    }
+
+    // 显示作业内容区域
+    showAssignmentsContent() {
+        const container = document.getElementById('assignmentsContainer');
+        const stats = document.getElementById('assignmentStats');
+        const noAssignments = document.getElementById('noAssignments');
+        
+        if (container) container.style.display = 'block';
+        if (stats) stats.style.display = 'flex';
+        if (noAssignments) noAssignments.style.display = 'none';
+    }
+
+    // 隐藏作业内容区域
+    hideAssignmentsContent() {
+        const container = document.getElementById('assignmentsContainer');
+        const stats = document.getElementById('assignmentStats');
+        const noAssignments = document.getElementById('noAssignments');
+        
+        if (container) container.style.display = 'none';
+        if (stats) stats.style.display = 'none';
+        if (noAssignments) noAssignments.style.display = 'none';
+    }
+
+    // 显示无作业提示
+    showNoAssignments() {
+        const container = document.getElementById('assignmentsContainer');
+        const stats = document.getElementById('assignmentStats');
+        const noAssignments = document.getElementById('noAssignments');
+        
+        if (container) container.style.display = 'none';
+        if (stats) stats.style.display = 'none';
+        if (noAssignments) noAssignments.style.display = 'block';
+    }
+
+    // 渲染作业网格
+    renderAssignmentsGrid(assignments) {
+        const grid = document.getElementById('assignmentsGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+
+        const filteredAssignments = this.filterAssignments(assignments, activeFilter);
+
+        if (filteredAssignments.length === 0) {
+            grid.innerHTML = '<div class="no-filtered-assignments">没有符合筛选条件的作业</div>';
+            return;
+        }
+
+        filteredAssignments.forEach(assignment => {
+            const assignmentCard = this.createAssignmentCard(assignment);
+            grid.appendChild(assignmentCard);
+        });
+    }
+
+    // 筛选作业
+    filterAssignments(assignments, filter) {
+        if (filter === 'all') return assignments;
+
+        return assignments.filter(assignment => {
+            const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
+            const submission = submissions.length > 0 ? submissions[0] : null;
+            const isOverdue = new Date(assignment.endTime) < new Date();
+            
+            // 判断作业状态：
+            // 1. 有提交记录且状态不是pending = 已提交（包括已批改）
+            // 2. 有提交记录且状态是pending = 已提交待批改
+            // 3. 没有提交记录 = 未提交
+            const hasSubmission = submissions.length > 0;
+            const isSubmitted = hasSubmission;
+            const isGraded = hasSubmission && submission.status === 'graded';
+
+            switch (filter) {
+                case 'pending':
+                    // 待提交：没有提交记录且未逾期
+                    return !hasSubmission && !isOverdue;
+                case 'submitted':
+                    // 已提交：有提交记录但未批改
+                    return hasSubmission && !isGraded;
+                case 'graded':
+                    // 已批改：有提交记录且已批改
+                    return isGraded;
+                case 'overdue':
+                    // 已逾期：没有提交记录且已逾期
+                    return !hasSubmission && isOverdue;
+                default:
+                    return true;
+            }
+        });
+    }
+
+    // 创建作业卡片
+    createAssignmentCard(assignment) {
+        const card = document.createElement('div');
+        card.className = 'assignment-card';
+        
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
+        const submission = submissions.length > 0 ? submissions[0] : null;
+        const isOverdue = new Date(assignment.endTime) < new Date();
+        
+        // 判断作业状态：
+        // hasSubmission: 是否有提交记录
+        // isSubmitted: 有提交记录就算已提交
+        // isGraded: 有提交记录且状态是graded
+        const hasSubmission = submissions.length > 0;
+        const isSubmitted = hasSubmission;
+        const isGraded = hasSubmission && submission && submission.status === 'graded';
+
+        // 计算剩余时间
+        const timeRemaining = this.getTimeRemaining(assignment.endTime);
+        
+        // 获取状态信息
+        let statusClass, statusText, statusIcon;
+        if (isGraded) {
+            statusClass = 'graded';
+            statusText = '已批改';
+            statusIcon = 'check-circle';
+        } else if (isSubmitted) {
+            statusClass = 'submitted';
+            statusText = '已提交';
+            statusIcon = 'paper-plane';
+        } else if (isOverdue) {
+            statusClass = 'overdue';
+            statusText = '已逾期';
+            statusIcon = 'exclamation-triangle';
+        } else {
+            statusClass = 'pending';
+            statusText = '待提交';
+            statusIcon = 'clock';
+        }
+
+        card.innerHTML = `
+            <div class="assignment-header">
+                <div class="assignment-title-section">
+                    <h4 class="assignment-title">${assignment.title}</h4>
+                    <div class="assignment-meta">
+                        <span class="assignment-type">
+                            <i class="fas fa-${assignment.type === 'exam' ? 'file-alt' : 'edit'}"></i>
+                            ${assignment.type === 'exam' ? '考试' : '作业'}
+                        </span>
+                        <span class="assignment-score">
+                            <i class="fas fa-star"></i>
+                            ${assignment.maxScore}分
+                        </span>
+                    </div>
+                </div>
+                <div class="assignment-status ${statusClass}">
+                    <i class="fas fa-${statusIcon}"></i>
+                    <span>${statusText}</span>
+                </div>
+            </div>
+            
+            <div class="assignment-content">
+                <p class="assignment-description">${assignment.description}</p>
+                <div class="assignment-time-info">
+                    <span class="deadline-time ${isOverdue ? 'overdue' : ''}">
+                        <i class="fas fa-clock"></i>
+                        截止: ${new Date(assignment.endTime).toLocaleString()}
+                    </span>
+                    <span class="time-remaining ${isOverdue ? 'overdue' : ''}">
+                        ${timeRemaining}
+                    </span>
+                </div>
+            </div>
+
+            ${isGraded ? `
+                <div class="assignment-grade">
+                    <div class="grade-display">
+                        <span class="score-value">${submission.score}</span>
+                        <span class="score-total">/ ${assignment.maxScore}</span>
+                        <span class="score-percentage">${Math.round((submission.score / assignment.maxScore) * 100)}%</span>
+                    </div>
+                    ${submission.feedback ? `
+                        <div class="grade-feedback">
+                            <strong>评语：</strong>
+                            <p>${submission.feedback}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+
+            <div class="assignment-actions">
+                ${isGraded ? `
+                    <button class="btn-sm btn-success" onclick="studentDashboard.viewSubmission('${assignment.id}')">
+                        <i class="fas fa-eye"></i> 查看详情
+                    </button>
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewGradeDetail('${submission.id}')">
+                        <i class="fas fa-chart-line"></i> 查看成绩
+                    </button>
+                ` : isSubmitted ? `
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${assignment.id}')">
+                        <i class="fas fa-file-alt"></i> 查看提交
+                    </button>
+                    <button class="btn-sm btn-warning" onclick="studentDashboard.resubmitAssignment('${assignment.id}')">
+                        <i class="fas fa-redo"></i> 重新提交
+                    </button>
+                ` : isOverdue ? `
+                    <button class="btn-sm btn-danger disabled">
+                        <i class="fas fa-times-circle"></i> 已逾期
+                    </button>
+                ` : `
+                    <button class="btn-sm btn-primary" onclick="studentDashboard.submitAssignment('${assignment.id}')">
+                        <i class="fas fa-upload"></i> 提交作业
+                    </button>
+                `}
+            </div>
+        `;
+
+        return card;
+    }
+
+    // 更新作业统计
+    updateAssignmentStats(assignments) {
+        let total = assignments.length;
+        let pending = 0;
+        let submitted = 0;
+        let graded = 0;
+        let overdue = 0;
+
+        assignments.forEach(assignment => {
+            const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
+            const submission = submissions.length > 0 ? submissions[0] : null;
+            const isOverdue = new Date(assignment.endTime) < new Date();
+            
+            // 判断逻辑：
+            // hasSubmission: 是否有提交记录
+            // isGraded: 有提交记录且状态是graded算已批改
+            // isSubmittedButNotGraded: 有提交记录但未批改
+            const hasSubmission = submissions.length > 0;
+            const isGraded = hasSubmission && submission && submission.status === 'graded';
+
+            if (isGraded) {
+                // 已批改
+                graded++;
+            } else if (hasSubmission) {
+                // 已提交但未批改
+                submitted++;
+            } else if (isOverdue) {
+                // 没有提交记录且已逾期
+                overdue++;
+            } else {
+                // 没有提交记录且未逾期
+                pending++;
+            }
+        });
+
+        const totalEl = document.getElementById('totalAssignments');
+        const pendingEl = document.getElementById('pendingAssignments');
+        const submittedEl = document.getElementById('submittedAssignments');
+        const gradedEl = document.getElementById('gradedAssignments');
+        const overdueEl = document.getElementById('overdueAssignments');
+
+        if (totalEl) totalEl.textContent = total;
+        if (pendingEl) pendingEl.textContent = pending;
+        if (submittedEl) submittedEl.textContent = submitted;
+        if (gradedEl) gradedEl.textContent = graded;
+        if (overdueEl) overdueEl.textContent = overdue;
+    }
+
+    // 设置作业筛选器
+    setupAssignmentFilters() {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 更新按钮状态
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // 重新渲染作业列表
+                const courseSelect = document.getElementById('assignmentCourseSelect');
+                if (courseSelect.value) {
+                    this.loadCourseAssignments();
+                }
+            });
+        });
+
+        // 设置课程选择器事件监听器
+        const courseSelect = document.getElementById('assignmentCourseSelect');
+        if (courseSelect) {
+            courseSelect.addEventListener('change', () => {
+                this.loadCourseAssignments();
+            });
+        }
+    }
+
+    // 渲染考试管理页面
+    renderExamsPage() {
+        this.populateExamCourseSelector();
+        this.setupExamFilters();
+        
+        // 如果已经有选中的课程，重新加载考试
+        const courseSelect = document.getElementById('examCourseSelect');
+        if (courseSelect && courseSelect.value) {
+            this.loadCourseExams();
+        }
+    }
+
+    // 填充考试课程选择器
+    populateExamCourseSelector() {
+        const courseSelect = document.getElementById('examCourseSelect');
+        if (!courseSelect) return;
+
+        courseSelect.innerHTML = '<option value="">请选择课程</option>';
+
+        this.enrollmentsData.forEach(enrollment => {
+            const course = this.coursesData.find(c => c.id === enrollment.courseId);
+            if (!course) return;
+
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = `${course.courseName} (${course.courseCode})`;
+            courseSelect.appendChild(option);
+        });
+    }
+
+    // 加载选中课程的考试
+    loadCourseExams() {
+        const courseSelect = document.getElementById('examCourseSelect');
+        const courseId = courseSelect.value;
+        
+        if (!courseId) {
+            this.hideExamsContent();
+            return;
+        }
+
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) return;
+
+        // 获取课程的所有考试
+        const exams = dataManager.getCourseExams(courseId);
+        
+        // 更新页面标题
+        const courseTitle = document.getElementById('selectedExamTitle');
+        if (courseTitle) {
+            courseTitle.textContent = `${course.courseName} - 考试列表`;
+        }
+
+        if (exams.length === 0) {
+            this.showNoExams();
+            return;
+        }
+
+        this.showExamsContent();
+        this.renderExamsGrid(exams);
+        this.updateExamStats(exams);
+    }
+
+    // 显示考试内容区域
+    showExamsContent() {
+        const container = document.getElementById('examsContainer');
+        const stats = document.getElementById('examStats');
+        const noExams = document.getElementById('noExams');
+        
+        if (container) container.style.display = 'block';
+        if (stats) stats.style.display = 'flex';
+        if (noExams) noExams.style.display = 'none';
+    }
+
+    // 隐藏考试内容区域
+    hideExamsContent() {
+        const container = document.getElementById('examsContainer');
+        const stats = document.getElementById('examStats');
+        const noExams = document.getElementById('noExams');
+        
+        if (container) container.style.display = 'none';
+        if (stats) stats.style.display = 'none';
+        if (noExams) noExams.style.display = 'none';
+    }
+
+    // 显示无考试提示
+    showNoExams() {
+        const container = document.getElementById('examsContainer');
+        const stats = document.getElementById('examStats');
+        const noExams = document.getElementById('noExams');
+        
+        if (container) container.style.display = 'none';
+        if (stats) stats.style.display = 'none';
+        if (noExams) noExams.style.display = 'block';
+    }
+
+    // 渲染考试网格
+    renderExamsGrid(exams) {
+        const grid = document.getElementById('examsGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        const activeFilter = document.querySelector('#examsContainer .filter-btn.active')?.dataset.filter || 'all';
+
+        const filteredExams = this.filterExams(exams, activeFilter);
+
+        if (filteredExams.length === 0) {
+            grid.innerHTML = '<div class="no-filtered-assignments">没有符合筛选条件的考试</div>';
+            return;
+        }
+
+        filteredExams.forEach(exam => {
+            const examCard = this.createExamCard(exam);
+            grid.appendChild(examCard);
+        });
+    }
+
+    // 筛选考试
+    filterExams(exams, filter) {
+        if (filter === 'all') return exams;
+
+        return exams.filter(exam => {
+            const submissions = dataManager.getStudentSubmissions(this.userData.id, exam.id);
+            const submission = submissions.length > 0 ? submissions[0] : null;
+            const isOverdue = new Date(exam.endTime) < new Date();
+            
+            const hasSubmission = submissions.length > 0;
+            const isSubmitted = hasSubmission;
+            const isGraded = hasSubmission && submission.status === 'graded';
+
+            switch (filter) {
+                case 'pending':
+                    return !hasSubmission && !isOverdue;
+                case 'submitted':
+                    return hasSubmission && !isGraded;
+                case 'graded':
+                    return isGraded;
+                case 'overdue':
+                    return !hasSubmission && isOverdue;
+                default:
+                    return true;
+            }
+        });
+    }
+
+    // 创建考试卡片
+    createExamCard(exam) {
+        const card = document.createElement('div');
+        card.className = 'assignment-card exam-card';
+        
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, exam.id);
+        const submission = submissions.length > 0 ? submissions[0] : null;
+        const isOverdue = new Date(exam.endTime) < new Date();
+        
+        const hasSubmission = submissions.length > 0;
+        const isSubmitted = hasSubmission;
+        const isGraded = hasSubmission && submission && submission.status === 'graded';
+
+        // 计算剩余时间
+        const timeRemaining = this.getTimeRemaining(exam.endTime);
+        
+        // 获取状态信息
+        let statusClass, statusText, statusIcon;
+        if (isGraded) {
+            statusClass = 'graded';
+            statusText = '已批改';
+            statusIcon = 'check-circle';
+        } else if (isSubmitted) {
+            statusClass = 'submitted';
+            statusText = '已提交';
+            statusIcon = 'paper-plane';
+        } else if (isOverdue) {
+            statusClass = 'overdue';
+            statusText = '已逾期';
+            statusIcon = 'exclamation-triangle';
+        } else {
+            statusClass = 'pending';
+            statusText = '待提交';
+            statusIcon = 'clock';
+        }
+
+        card.innerHTML = `
+            <div class="assignment-header">
+                <div class="assignment-title-section">
+                    <h4 class="assignment-title">
+                        ${exam.title}
+                        <span class="exam-type-badge">
+                            <i class="fas fa-clipboard-check"></i>
+                            考试
+                        </span>
+                    </h4>
+                    <div class="assignment-meta">
+                        <span class="exam-duration">
+                            <i class="fas fa-clock"></i>
+                            ${exam.duration || 120}分钟
+                        </span>
+                        <span class="assignment-score">
+                            <i class="fas fa-star"></i>
+                            ${exam.maxScore}分
+                        </span>
+                    </div>
+                </div>
+                <div class="assignment-status ${statusClass}">
+                    <i class="fas fa-${statusIcon}"></i>
+                    <span>${statusText}</span>
+                </div>
+            </div>
+            
+            <div class="assignment-content">
+                <p class="assignment-description">${exam.description}</p>
+                <div class="assignment-time-info">
+                    <span class="deadline-time ${isOverdue ? 'overdue' : ''}">
+                        <i class="fas fa-clock"></i>
+                        截止: ${new Date(exam.endTime).toLocaleString()}
+                    </span>
+                    <span class="time-remaining ${isOverdue ? 'overdue' : ''}">
+                        ${timeRemaining}
+                    </span>
+                </div>
+            </div>
+
+            ${isGraded ? `
+                <div class="assignment-grade">
+                    <div class="grade-display">
+                        <span class="score-value">${submission.score}</span>
+                        <span class="score-total">/ ${exam.maxScore}</span>
+                        <span class="score-percentage">${Math.round((submission.score / exam.maxScore) * 100)}%</span>
+                    </div>
+                    ${submission.feedback ? `
+                        <div class="grade-feedback">
+                            <strong>评语：</strong>
+                            <p>${submission.feedback}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+
+            <div class="assignment-actions">
+                ${isGraded ? `
+                    <button class="btn-sm btn-success" onclick="studentDashboard.viewSubmission('${exam.id}')">
+                        <i class="fas fa-eye"></i> 查看详情
+                    </button>
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewGradeDetail('${submission.id}')">
+                        <i class="fas fa-chart-line"></i> 查看成绩
+                    </button>
+                ` : isSubmitted ? `
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${exam.id}')">
+                        <i class="fas fa-file-alt"></i> 查看提交
+                    </button>
+                    <button class="btn-sm btn-warning" onclick="studentDashboard.resubmitExam('${exam.id}')">
+                        <i class="fas fa-redo"></i> 重新提交
+                    </button>
+                ` : isOverdue ? `
+                    <button class="btn-sm btn-danger disabled">
+                        <i class="fas fa-times-circle"></i> 已逾期
+                    </button>
+                ` : `
+                    <button class="btn-sm btn-primary" onclick="studentDashboard.startExam('${exam.id}')">
+                        <i class="fas fa-play"></i> 开始考试
+                    </button>
+                `}
+            </div>
+        `;
+
+        return card;
+    }
+
+    // 更新考试统计
+    updateExamStats(exams) {
+        let total = exams.length;
+        let pending = 0;
+        let submitted = 0;
+        let graded = 0;
+        let overdue = 0;
+
+        exams.forEach(exam => {
+            const submissions = dataManager.getStudentSubmissions(this.userData.id, exam.id);
+            const submission = submissions.length > 0 ? submissions[0] : null;
+            const isOverdue = new Date(exam.endTime) < new Date();
+            
+            const hasSubmission = submissions.length > 0;
+            const isGraded = hasSubmission && submission && submission.status === 'graded';
+
+            if (isGraded) {
+                graded++;
+            } else if (hasSubmission) {
+                submitted++;
+            } else if (isOverdue) {
+                overdue++;
+            } else {
+                pending++;
+            }
+        });
+
+        const totalEl = document.getElementById('totalExams');
+        const pendingEl = document.getElementById('pendingExams');
+        const submittedEl = document.getElementById('submittedExams');
+        const gradedEl = document.getElementById('gradedExams');
+        const overdueEl = document.getElementById('overdueExams');
+
+        if (totalEl) totalEl.textContent = total;
+        if (pendingEl) pendingEl.textContent = pending;
+        if (submittedEl) submittedEl.textContent = submitted;
+        if (gradedEl) gradedEl.textContent = graded;
+        if (overdueEl) overdueEl.textContent = overdue;
+    }
+
+    // 设置考试筛选器
+    setupExamFilters() {
+        // 获取考试页面的筛选按钮
+        const filterButtons = document.querySelectorAll('#examsContainer .filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 更新按钮状态
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // 重新渲染考试列表
+                const courseSelect = document.getElementById('examCourseSelect');
+                if (courseSelect.value) {
+                    this.loadCourseExams();
+                }
+            });
+        });
+
+        // 设置考试课程选择器事件监听器
+        const courseSelect = document.getElementById('examCourseSelect');
+        if (courseSelect) {
+            courseSelect.addEventListener('change', () => {
+                this.loadCourseExams();
+            });
+        }
     }
 
     // 渲染成绩
@@ -870,7 +2586,7 @@ class StudentDashboard {
                 
                 if (progress === 100 && !hasActualGrade) {
                     // 生成预测成绩和绩点（与明细表逻辑一致）
-                    const assignments = dataManager.getCourseAssignments(course.id);
+                    const assignments = dataManager.getCourseHomework(course.id);
                     const completedAssignments = assignments.filter(assignment => {
                         const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
                         return submissions && submissions.length > 0;
@@ -1009,7 +2725,7 @@ class StudentDashboard {
                     let predictedScore = '-';
                     if (progress === 100) {
                         // 基于作业完成情况生成预测绩点
-                        const assignments = dataManager.getCourseAssignments(course.id);
+                        const assignments = dataManager.getCourseHomework(course.id);
                         const completedAssignments = assignments.filter(assignment => {
                             const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
                             return submissions && submissions.length > 0;
@@ -1183,12 +2899,12 @@ class StudentDashboard {
         let count = 0;
         
         this.enrollmentsData.forEach(enrollment => {
-            const assignments = dataManager.getCourseAssignments(enrollment.courseId);
+            const assignments = dataManager.getCourseHomework(enrollment.courseId);
             assignments.forEach(assignment => {
                 const endTime = new Date(assignment.endTime);
                 const hoursLeft = (endTime - now) / (1000 * 60 * 60);
                 
-                // 24小时内到期的作业
+                // 24小时内到期的作业和考试
                 if (hoursLeft > 0 && hoursLeft <= 24) {
                     count++;
                 }
@@ -1210,7 +2926,7 @@ class StudentDashboard {
         
         // 检查未提交的作业
         this.enrollmentsData.forEach(enrollment => {
-            const assignments = dataManager.getCourseAssignments(enrollment.courseId);
+            const assignments = dataManager.getCourseHomework(enrollment.courseId);
             assignments.forEach(assignment => {
                 const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
                 if (submissions.length === 0) {
@@ -1250,7 +2966,7 @@ class StudentDashboard {
         // 即将到期的作业
         this.enrollmentsData.forEach(enrollment => {
             const course = dataManager.getData('courses').find(c => c.id === enrollment.courseId);
-            const assignments = dataManager.getCourseAssignments(enrollment.courseId);
+            const assignments = dataManager.getCourseHomework(enrollment.courseId);
             
             assignments.forEach(assignment => {
                 const now = new Date();
@@ -1258,9 +2974,10 @@ class StudentDashboard {
                 const hoursLeft = (endTime - now) / (1000 * 60 * 60);
                 
                 if (hoursLeft > 0 && hoursLeft <= 24) {
+                    const itemType = assignment.type === 'exam' ? '考试' : '作业';
                     notifications.push({
-                        type: 'assignment',
-                        text: `${course?.courseName || '课程'}作业"${assignment.title}"将在${Math.round(hoursLeft)}小时后截止`,
+                        type: assignment.type,
+                        text: `${course?.courseName || '课程'}${itemType}"${assignment.title}"将在${Math.round(hoursLeft)}小时后截止`,
                         priority: hoursLeft <= 6 ? 'high' : 'normal'
                     });
                 }
