@@ -2,6 +2,213 @@
 class DataManager {
     constructor() {
         this.initializeData();
+        this.initializeTempFiles();
+        this.restoreTempFiles();
+        
+        // 启动定期清理任务（每30分钟检查一次）
+        this.startTempFileCleanup();
+    }
+
+    // 启动临时文件定期清理
+    startTempFileCleanup() {
+        // 每30分钟清理一次过期文件
+        setInterval(() => {
+            const cleanedCount = this.cleanExpiredTempFiles();
+            if (cleanedCount > 0) {
+                console.log(`定期清理：移除了 ${cleanedCount} 个过期临时文件`);
+            }
+        }, 30 * 60 * 1000); // 30分钟
+    }
+
+    // 初始化临时文件存储
+    initializeTempFiles() {
+        this.tempFiles = new Map(); // 存储临时文件 {tempPath: fileData}
+        this.tempFileCounter = 0;
+    }
+
+    // 从localStorage恢复临时文件
+    restoreTempFiles() {
+        try {
+            const savedTempFiles = localStorage.getItem('tempFiles');
+            if (savedTempFiles) {
+                const tempFilesData = JSON.parse(savedTempFiles);
+                Object.entries(tempFilesData).forEach(([tempPath, fileData]) => {
+                    this.tempFiles.set(tempPath, fileData);
+                });
+                console.log('恢复临时文件:', this.tempFiles.size, '个');
+                
+                // 清理过期文件
+                const cleanedCount = this.cleanExpiredTempFiles();
+                if (cleanedCount > 0) {
+                    console.log(`清理了 ${cleanedCount} 个过期临时文件`);
+                }
+            }
+        } catch (error) {
+            console.warn('恢复临时文件失败:', error);
+        }
+    }
+
+    // 保存临时文件到localStorage
+    saveTempFiles() {
+        try {
+            const tempFilesData = Object.fromEntries(this.tempFiles);
+            localStorage.setItem('tempFiles', JSON.stringify(tempFilesData));
+        } catch (error) {
+            console.warn('保存临时文件失败:', error);
+        }
+    }
+
+    // 生成临时文件路径
+    generateTempPath(originalFileName) {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const extension = originalFileName.split('.').pop();
+        return `temp_${timestamp}_${random}.${extension}`;
+    }
+
+    // 存储文件到临时路径
+    storeTempFile(file, tempPath) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileData = {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    data: e.target.result, // base64数据
+                    originalPath: tempPath,
+                    uploadTime: new Date().toISOString()
+                };
+                this.tempFiles.set(tempPath, fileData);
+                // 保存到localStorage
+                this.saveTempFiles();
+                resolve(tempPath);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 存储文件数据到临时路径（直接存储，用于重新创建文件）
+    storeTempFileData(tempPath, fileData, originalName) {
+        const data = {
+            name: originalName || `file_${tempPath.split('.').pop()}`,
+            size: 0,
+            type: 'application/octet-stream',
+            data: fileData,
+            originalPath: tempPath,
+            uploadTime: new Date().toISOString()
+        };
+        this.tempFiles.set(tempPath, data);
+        this.saveTempFiles();
+    }
+
+    // 批量存储文件到临时路径
+    async storeTempFiles(files) {
+        const tempPaths = [];
+        for (const file of files) {
+            const tempPath = this.generateTempPath(file.name);
+            await this.storeTempFile(file, tempPath);
+            tempPaths.push(tempPath);
+        }
+        return tempPaths;
+    }
+
+    // 根据临时路径获取文件数据
+    getTempFile(tempPath) {
+        return this.tempFiles.get(tempPath);
+    }
+
+    // 下载临时文件
+    downloadTempFile(tempPath) {
+        const fileData = this.tempFiles.get(tempPath);
+        if (!fileData) {
+            console.error('文件不存在:', tempPath);
+            return;
+        }
+
+        try {
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = fileData.data;
+            link.download = fileData.name || `download_${Date.now()}`;
+            
+            // 设置下载属性
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // 触发下载
+            link.click();
+            
+            // 清理
+            document.body.removeChild(link);
+            
+            console.log('文件下载成功:', fileData.name);
+        } catch (error) {
+            console.error('下载失败:', error);
+            throw new Error('文件下载失败: ' + error.message);
+        }
+    }
+
+    // 删除临时文件
+    removeTempFile(tempPath) {
+        this.tempFiles.delete(tempPath);
+        this.saveTempFiles();
+    }
+
+    // 清理所有临时文件
+    clearTempFiles() {
+        this.tempFiles.clear();
+        this.saveTempFiles();
+    }
+
+    // 清理过期的临时文件（默认7天有效期）
+    cleanExpiredTempFiles(maxAgeDays = 7) {
+        const now = new Date();
+        const maxAge = maxAgeDays * 24 * 60 * 60 * 1000; // 转换为毫秒
+        
+        let cleanedCount = 0;
+        const expiredFiles = [];
+        
+        this.tempFiles.forEach((fileData, tempPath) => {
+            if (fileData.uploadTime) {
+                const uploadTime = new Date(fileData.uploadTime);
+                const age = now - uploadTime;
+                
+                if (age > maxAge) {
+                    expiredFiles.push(tempPath);
+                }
+            } else {
+                // 如果没有上传时间，默认认为过期
+                expiredFiles.push(tempPath);
+            }
+        });
+        
+        // 删除过期文件
+        expiredFiles.forEach(tempPath => {
+            this.tempFiles.delete(tempPath);
+            cleanedCount++;
+        });
+        
+        if (cleanedCount > 0) {
+            this.saveTempFiles();
+            console.log(`清理了 ${cleanedCount} 个过期临时文件`);
+        }
+        
+        return cleanedCount;
+    }
+
+    // 获取临时文件信息
+    getTempFileInfo(tempPath) {
+        const fileData = this.tempFiles.get(tempPath);
+        if (!fileData) return null;
+        
+        return {
+            name: fileData.name,
+            size: fileData.size,
+            type: fileData.type,
+            uploadTime: fileData.uploadTime,
+            tempPath: tempPath
+        };
     }
 
     // 初始化数据
@@ -933,10 +1140,27 @@ class DataManager {
     }
 
     // 获取课程的作业列表
-    getCourseAssignments(courseId) {
-        return this.data.assignments.filter(assignment => 
+    getCourseAssignments(courseId, type = null) {
+        let assignments = this.data.assignments.filter(assignment => 
             assignment.courseId === courseId
         );
+        
+        // 如果指定了类型，进行过滤
+        if (type) {
+            assignments = assignments.filter(assignment => assignment.type === type);
+        }
+        
+        return assignments;
+    }
+
+    // 获取课程的作业列表（仅作业，不包含考试）
+    getCourseHomework(courseId) {
+        return this.getCourseAssignments(courseId, 'assignment');
+    }
+
+    // 获取课程的考试列表
+    getCourseExams(courseId) {
+        return this.getCourseAssignments(courseId, 'exam');
     }
 
     // 获取教师的作业列表
