@@ -215,7 +215,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '本课程深入讲解数据结构的基本概念、算法设计与分析方法。内容包括线性表、栈、队列、树、图等基本数据结构，以及排序、搜索等核心算法。通过理论学习和实践编程，培养学生分析和解决复杂问题的能力。',
                     maxStudents: 50,
-                    currentStudents: 38,
+                    currentStudents: 3,
                     category: 'required',
                     status: 'published',
                     createdAt: '2024-01-15T08:00:00Z',
@@ -245,7 +245,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习操作系统的基本原理和实现技术。包括进程管理、内存管理、文件系统、设备管理等核心概念。通过实际项目，学生将理解操作系统设计的复杂性，并能进行简单的系统级编程。',
                     maxStudents: 45,
-                    currentStudents: 28,
+                    currentStudents: 1,
                     category: 'required',
                     status: 'published',
                     createdAt: '2024-01-12T10:30:00Z',
@@ -260,7 +260,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习数据库系统的基本原理和设计方法。内容包括关系模型、SQL语言、数据库设计、事务处理、并发控制等。通过实际案例，学生将掌握数据库应用系统的设计和开发能力。',
                     maxStudents: 40,
-                    currentStudents: 25,
+                    currentStudents: 2,
                     category: 'elective',
                     status: 'published',
                     createdAt: '2024-01-08T13:15:00Z',
@@ -275,7 +275,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习算法设计的基本方法和分析技术。涵盖贪心算法、动态规划、分治策略、图算法等经典算法。通过大量编程练习，培养学生设计高效算法和分析算法性能的能力。',
                     maxStudents: 35,
-                    currentStudents: 20,
+                    currentStudents: 1,
                     category: 'elective',
                     status: 'published',
                     createdAt: '2024-01-05T14:00:00Z',
@@ -632,8 +632,128 @@ class DataManager {
             }
         });
         
+        // 确保数据一致性
+        this.ensureDataConsistency();
+        
         console.log('数据兼容性检查完成');
         this.saveData();
+    }
+
+    // 确保数据一致性
+    ensureDataConsistency() {
+        // 1. 更新课程的当前学生数（基于活跃的选课记录）
+        this.data.courses.forEach(course => {
+            const actualStudentCount = this.data.enrollments.filter(enrollment => 
+                enrollment.courseId === course.id && enrollment.status === 'active'
+            ).length;
+            
+            if (course.currentStudents !== actualStudentCount) {
+                console.log(`修正课程 ${course.courseName} 的学生数：${course.currentStudents} -> ${actualStudentCount}`);
+                course.currentStudents = actualStudentCount;
+            }
+        });
+        
+        // 2. 验证选课记录中的学生ID和课程ID是否存在
+        this.data.enrollments = this.data.enrollments.filter(enrollment => {
+            const studentExists = this.data.users.some(user => 
+                user.id === enrollment.studentId && user.userType === 'student'
+            );
+            const courseExists = this.data.courses.some(course => 
+                course.id === enrollment.courseId
+            );
+            
+            if (!studentExists) {
+                console.warn(`删除无效选课记录：学生 ${enrollment.studentId} 不存在`);
+                return false;
+            }
+            if (!courseExists) {
+                console.warn(`删除无效选课记录：课程 ${enrollment.courseId} 不存在`);
+                return false;
+            }
+            return true;
+        });
+        
+        // 3. 验证作业记录中的课程ID是否存在
+        this.data.assignments.forEach(assignment => {
+            const courseExists = this.data.courses.some(course => course.id === assignment.courseId);
+            if (!courseExists) {
+                console.warn(`作业 ${assignment.id} 引用的课程 ${assignment.courseId} 不存在`);
+            }
+        });
+        
+        // 4. 验证提交记录中的学生ID和作业ID是否存在
+        this.data.submissions = this.data.submissions.filter(submission => {
+            const studentExists = this.data.users.some(user => 
+                user.id === submission.studentId && user.userType === 'student'
+            );
+            const assignmentExists = this.data.assignments.some(assignment => 
+                assignment.id === submission.assignmentId
+            );
+            
+            if (!studentExists) {
+                console.warn(`删除无效提交记录：学生 ${submission.studentId} 不存在`);
+                return false;
+            }
+            if (!assignmentExists) {
+                console.warn(`删除无效提交记录：作业 ${submission.assignmentId} 不存在`);
+                return false;
+            }
+            return true;
+        });
+        
+        // 5. 验证成绩记录中的学生ID和课程ID是否存在
+        this.data.grades = this.data.grades.filter(grade => {
+            const studentExists = this.data.users.some(user => 
+                user.id === grade.studentId && user.userType === 'student'
+            );
+            const courseExists = this.data.courses.some(course => course.id === grade.courseId);
+            
+            if (!studentExists) {
+                console.warn(`删除无效成绩记录：学生 ${grade.studentId} 不存在`);
+                return false;
+            }
+            if (!courseExists) {
+                console.warn(`删除无效成绩记录：课程 ${grade.courseId} 不存在`);
+                return false;
+            }
+            return true;
+        });
+        
+        // 6. 验证教师分配的合理性
+        this.data.courses.forEach(course => {
+            if (course.teacherId) {
+                const teacherExists = this.data.users.some(user => 
+                    user.id === course.teacherId && user.userType === 'teacher'
+                );
+                if (!teacherExists) {
+                    console.warn(`课程 ${course.courseName} 的教师 ${course.teacherId} 不存在`);
+                }
+            }
+        });
+        
+        // 7. 验证院系分配的合理性
+        this.data.courses.forEach(course => {
+            if (course.departmentId) {
+                const departmentExists = this.data.departments.some(department => 
+                    department.id === course.departmentId
+                );
+                if (!departmentExists) {
+                    console.warn(`课程 ${course.courseName} 的院系 ${course.departmentId} 不存在`);
+                }
+            }
+        });
+        
+        // 8. 验证班级分配的合理性
+        this.data.users.forEach(user => {
+            if (user.userType === 'student' && user.classId) {
+                const classExists = this.data.classes.some(cls => cls.id === user.classId);
+                if (!classExists) {
+                    console.warn(`学生 ${user.name} 的班级 ${user.classId} 不存在`);
+                }
+            }
+        });
+        
+        console.log('数据一致性检查完成');
     }
 
     // 保存数据到本地存储
@@ -1023,6 +1143,95 @@ class DataManager {
         this.data[collection].splice(index, 1);
         this.saveData();
         return true;
+    }
+
+    // 更新课程学生数（在选课/退选时调用）
+    updateCourseStudentCount(courseId) {
+        const course = this.data.courses.find(c => c.id === courseId);
+        if (!course) return false;
+        
+        const actualCount = this.data.enrollments.filter(enrollment => 
+            enrollment.courseId === courseId && enrollment.status === 'active'
+        ).length;
+        
+        course.currentStudents = actualCount;
+        this.saveData();
+        return true;
+    }
+
+    // 添加选课记录（带数据一致性保证）
+    addEnrollment(enrollment) {
+        if (!this.data.enrollments) {
+            this.data.enrollments = [];
+        }
+        
+        // 验证学生和课程存在
+        const studentExists = this.data.users.some(user => 
+            user.id === enrollment.studentId && user.userType === 'student'
+        );
+        const courseExists = this.data.courses.some(course => 
+            course.id === enrollment.courseId
+        );
+        
+        if (!studentExists) {
+            console.error('学生不存在，无法添加选课记录');
+            return false;
+        }
+        
+        if (!courseExists) {
+            console.error('课程不存在，无法添加选课记录');
+            return false;
+        }
+        
+        // 检查是否已经选课
+        const alreadyEnrolled = this.data.enrollments.some(e => 
+            e.studentId === enrollment.studentId && 
+            e.courseId === enrollment.courseId && 
+            e.status === 'active'
+        );
+        
+        if (alreadyEnrolled) {
+            console.error('学生已经选过这门课程');
+            return false;
+        }
+        
+        this.data.enrollments.push(enrollment);
+        this.updateCourseStudentCount(enrollment.courseId);
+        return true;
+    }
+
+    // 删除选课记录（带数据一致性保证）
+    removeEnrollment(studentId, courseId) {
+        const enrollmentIndex = this.data.enrollments.findIndex(e => 
+            e.studentId === studentId && 
+            e.courseId === courseId && 
+            e.status === 'active'
+        );
+        
+        if (enrollmentIndex === -1) {
+            console.error('未找到选课记录');
+            return false;
+        }
+        
+        this.data.enrollments.splice(enrollmentIndex, 1);
+        this.updateCourseStudentCount(courseId);
+        return true;
+    }
+
+    // 获取课程可用名额
+    getCourseAvailableSlots(courseId) {
+        const course = this.data.courses.find(c => c.id === courseId);
+        if (!course) return 0;
+        
+        return Math.max(0, course.maxStudents - course.currentStudents);
+    }
+
+    // 验证课程是否可选
+    isCourseAvailable(courseId) {
+        const course = this.data.courses.find(c => c.id === courseId);
+        if (!course) return false;
+        
+        return course.status === 'published' && course.currentStudents < course.maxStudents;
     }
 }
 

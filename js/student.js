@@ -398,6 +398,12 @@ class StudentDashboard {
             return;
         }
 
+        // 检查课程是否可选
+        if (!dataManager.isCourseAvailable(courseId)) {
+            showMessage('课程不可选或人数已满', 'warning');
+            return;
+        }
+
         // 检查是否已经选修
         if (this.enrollmentsData.some(e => e.courseId === courseId)) {
             showMessage('您已经选修了这门课程', 'warning');
@@ -414,16 +420,17 @@ class StudentDashboard {
             type: 'enrolled' // 标记为正式选修
         };
 
-        // 添加到数据中
-        this.addEnrollment(enrollment);
-        
-        // 更新课程当前人数
-        course.currentStudents++;
+        // 使用dataManager的添加选课记录方法（确保数据一致性）
+        if (!dataManager.addEnrollment(enrollment)) {
+            showMessage('选课失败，请检查课程状态或您是否已选过该课程', 'error');
+            return;
+        }
         
         // 确保课程状态完全初始化（清除可能的旧数据残留）
         this.initializeCourseState(courseId);
         
-        dataManager.saveData();
+        // 重新加载课程数据以获取更新的学生数
+        this.coursesData = dataManager.getData('courses');
 
         // 重新加载数据并刷新页面
         this.loadStudentData();
@@ -490,15 +497,7 @@ class StudentDashboard {
         console.log(`已初始化课程 ${courseId} 的状态`);
     }
 
-    // 添加选课记录（临时实现，需要在DataManager中添加）
-    addEnrollment(enrollment) {
-        const data = dataManager.getData();
-        if (!data.enrollments) {
-            data.enrollments = [];
-        }
-        data.enrollments.push(enrollment);
-        dataManager.saveData();
-    }
+
 
     // 更新课程进度
     updateCourseProgress(courseId, progressValue) {
@@ -586,19 +585,17 @@ class StudentDashboard {
             return;
         }
 
-        // 从数据管理器中删除选课记录（关键修复）
-        allEnrollments.splice(enrollmentIndex, 1);
-        
-        // 更新课程当前人数
-        if (course.currentStudents > 0) {
-            course.currentStudents--;
+        // 使用dataManager的删除选课记录方法（确保数据一致性）
+        if (!dataManager.removeEnrollment(this.userData.id, courseId)) {
+            showMessage('退选失败，未找到选课记录', 'error');
+            return;
         }
         
         // 彻底清除该课程相关的所有学生数据
         this.cleanCourseData(courseId);
         
-        // 保存到持久化存储
-        dataManager.saveData();
+        // 重新加载课程数据以获取更新的学生数
+        this.coursesData = dataManager.getData('courses');
 
         // 重新加载数据并刷新页面
         this.loadStudentData();
