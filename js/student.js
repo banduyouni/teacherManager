@@ -1137,10 +1137,31 @@ class StudentDashboard {
                     <i class="fas fa-file"></i>
                     <span class="file-name">${file.name}</span>
                     <span class="file-size">${this.formatFileSize(file.size)}</span>
-                    <button type="button" class="file-download" onclick="studentDashboard.downloadTempFile('${tempPath}')" title="下载文件">
+                    <button type="button" class="file-download" onclick="studentDashboard.downloadSubmissionFile('${tempPath}', '${file.name}')" title="下载文件">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button type="button" class="file-remove" onclick="studentDashboard.removeFile(${index})" title="移除文件">
+                    <button type="button" class="file-remove" onclick="studentDashboard.removeAssignmentFile(${index})" title="移除文件">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 更新考试文件列表显示
+    updateExamFileList(files, fileList) {
+        fileList.innerHTML = files.map((fileItem, index) => {
+            const file = fileItem.file || fileItem; // 兼容旧格式
+            const tempPath = fileItem.tempPath;
+            return `
+                <div class="file-item">
+                    <i class="fas fa-file"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${this.formatFileSize(file.size)}</span>
+                    <button type="button" class="file-download" onclick="studentDashboard.downloadSubmissionFile('${tempPath}', '${file.name}')" title="下载文件">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button type="button" class="file-remove" onclick="studentDashboard.removeExamFile(${index})" title="移除文件">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1157,8 +1178,8 @@ class StudentDashboard {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // 移除文件
-    removeFile(index) {
+    // 移除作业文件
+    removeAssignmentFile(index) {
         const fileList = document.getElementById('fileList');
         
         // 获取当前文件列表（这里需要从全局或DOM中获取）
@@ -1180,9 +1201,42 @@ class StudentDashboard {
         this.updateFileList(this.currentAssignmentFiles, fileList);
     }
 
+    // 移除考试文件
+    removeExamFile(index) {
+        const fileList = document.getElementById('examFileList');
+        
+        // 获取当前文件列表
+        if (!this.currentExamFiles) {
+            this.currentExamFiles = [];
+        }
+        
+        const removedFile = this.currentExamFiles[index];
+        
+        // 删除临时文件
+        if (removedFile && removedFile.tempPath) {
+            dataManager.removeTempFile(removedFile.tempPath);
+        }
+        
+        // 从数组中移除
+        this.currentExamFiles.splice(index, 1);
+        
+        // 更新显示
+        this.updateExamFileList(this.currentExamFiles, fileList);
+    }
+
+    // 移除文件（保持向后兼容）
+    removeFile(index) {
+        this.removeAssignmentFile(index);
+    }
+
     // 设置提交表单
     setupSubmissionForm(assignmentId, isResubmission = false) {
         const form = document.getElementById('submissionForm');
+        
+        // 如果是重新提交，加载之前的提交内容
+        if (isResubmission) {
+            this.loadPreviousAssignmentSubmission(assignmentId);
+        }
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1199,6 +1253,41 @@ class StudentDashboard {
             
             this.processSubmission(assignmentId, content, files, isResubmission);
         });
+    }
+
+    // 加载之前的作业提交内容
+    loadPreviousAssignmentSubmission(assignmentId) {
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignmentId);
+        if (submissions.length > 0) {
+            const submission = submissions[0];
+            
+            // 加载文本内容
+            const contentTextarea = document.getElementById('submissionContent');
+            if (contentTextarea && submission.content) {
+                contentTextarea.value = submission.content;
+            }
+            
+            // 加载文件
+            if (submission.files && submission.files.length > 0) {
+                this.currentAssignmentFiles = [];
+                const fileList = document.getElementById('fileList');
+                
+                submission.files.forEach(fileInfo => {
+                    // 为重新提交创建文件对象，但保持原有的临时路径
+                    const fileItem = {
+                        tempPath: fileInfo.tempPath,
+                        file: {
+                            name: fileInfo.originalName,
+                            size: fileInfo.size
+                        }
+                    };
+                    this.currentAssignmentFiles.push(fileItem);
+                });
+                
+                // 更新文件列表显示
+                this.updateFileList(this.currentAssignmentFiles, fileList);
+            }
+        }
     }
 
     // 处理作业提交
@@ -1306,19 +1395,29 @@ class StudentDashboard {
         }
 
         const submission = submissions[0];
-        const assignment = dataManager.getData('assignments').find(a => a.id === assignmentId);
         
-        this.showSubmissionDetailModal(submission, assignment);
+        // 根据提交类型查找对应的作业或考试
+        // 注意：考试和作业都存储在assignments数组中，通过type字段区分
+        const assignments = dataManager.getData('assignments');
+        const item = assignments.find(item => item.id === assignmentId);
+        
+        if (!item) {
+            showMessage('未找到对应的作业或考试', 'error');
+            return;
+        }
+        
+        this.showSubmissionDetailModal(submission, item);
     }
 
     // 显示提交详情模态框
-    showSubmissionDetailModal(submission, assignment) {
+    showSubmissionDetailModal(submission, item) {
+        const isExam = item.type === 'exam';
         const modal = document.createElement('div');
         modal.className = 'submission-detail-modal-overlay';
         modal.innerHTML = `
             <div class="submission-detail-modal">
                 <div class="detail-header">
-                    <h3>📄 提交详情 - ${assignment.title}</h3>
+                    <h3>📄 提交详情 - ${item.title}</h3>
                     <button class="close-btn" onclick="this.closest('.submission-detail-modal-overlay').remove()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1330,15 +1429,27 @@ class StudentDashboard {
                             <span>${new Date(submission.submittedTime).toLocaleString()}</span>
                         </div>
                         <div class="info-row">
-                            <label>作业状态：</label>
+                            <label>${isExam ? '考试状态' : '作业状态'}：</label>
                             <span class="status-badge ${submission.status}">
                                 ${this.getStatusText(submission.status)}
                             </span>
                         </div>
+                        ${isExam ? `
+                            <div class="info-row">
+                                <label>考试时长：</label>
+                                <span>${item.duration || 120}分钟</span>
+                            </div>
+                            ${submission.examEndTime ? `
+                                <div class="info-row">
+                                    <label>实际用时：</label>
+                                    <span>${this.calculateExamTimeUsed(submission.examStartTime, submission.examEndTime)}分钟</span>
+                                </div>
+                            ` : ''}
+                        ` : ''}
                         ${submission.score !== null ? `
                             <div class="info-row">
                                 <label>得分：</label>
-                                <span class="score-display">${submission.score} / ${assignment.maxScore}</span>
+                                <span class="score-display">${submission.score} / ${item.maxScore}</span>
                             </div>
                         ` : ''}
                         ${submission.feedback ? `
@@ -1350,7 +1461,7 @@ class StudentDashboard {
                     </div>
                     
                     <div class="submission-content-section">
-                        <h4>作业内容</h4>
+                        <h4>${isExam ? '考试内容' : '作业内容'}</h4>
                         <div class="content-display">
                             ${submission.content || '无文字内容'}
                         </div>
@@ -1395,7 +1506,7 @@ class StudentDashboard {
                             关闭
                         </button>
                         ${submission.status === 'pending' ? `
-                            <button class="btn-primary" onclick="studentDashboard.resubmitAssignment('${assignment.id}')">
+                            <button class="btn-primary" onclick="studentDashboard.${isExam ? 'resubmitExam' : 'resubmitAssignment'}('${item.id}')">
                                 <i class="fas fa-redo"></i> 重新提交
                             </button>
                         ` : ''}
@@ -1629,26 +1740,7 @@ class StudentDashboard {
         this.updateExamFileList(uploadedFiles, fileList);
     }
 
-    // 更新考试文件列表显示
-    updateExamFileList(files, fileList) {
-        fileList.innerHTML = files.map((fileItem, index) => {
-            const file = fileItem.file || fileItem; // 兼容旧格式
-            const tempPath = fileItem.tempPath;
-            return `
-                <div class="file-item">
-                    <i class="fas fa-file"></i>
-                    <span class="file-name">${file.name}</span>
-                    <span class="file-size">${this.formatFileSize(file.size)}</span>
-                    <button type="button" class="file-download" onclick="studentDashboard.downloadTempFile('${tempPath}')" title="下载文件">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button type="button" class="file-remove" onclick="studentDashboard.removeExamFile(${index})" title="移除文件">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-        }).join('');
-    }
+
 
     // 移除考试文件
     removeExamFile(index) {
@@ -1681,12 +1773,119 @@ class StudentDashboard {
 
     // 下载提交的文件
     downloadSubmissionFile(tempPath, originalName) {
-        dataManager.downloadTempFile(tempPath);
+        const fileData = dataManager.getTempFile(tempPath);
+        if (!fileData) {
+            // 如果临时文件不存在，尝试从提交记录中重新创建
+            this.recreateTempFileFromSubmission(tempPath, originalName);
+        } else {
+            dataManager.downloadTempFile(tempPath);
+        }
+    }
+
+    // 从提交记录重新创建临时文件
+    recreateTempFileFromSubmission(tempPath, originalName) {
+        // 查找所有包含该文件的提交记录
+        const submissions = dataManager.getData('submissions').filter(submission => 
+            submission.files && submission.files.some(file => 
+                (typeof file === 'object' && file.tempPath === tempPath) ||
+                (typeof file === 'string' && file === originalName)
+            )
+        );
+
+        if (submissions.length > 0) {
+            const submission = submissions[0];
+            const file = submission.files.find(file => 
+                (typeof file === 'object' && file.tempPath === tempPath) ||
+                (typeof file === 'string' && file === originalName)
+            );
+
+            if (file) {
+                // 创建一个示例文件数据供下载
+                const fileContent = this.createFileContent(file.originalName || file, submission);
+                dataManager.storeTempFileData(tempPath, fileContent, file.originalName || file);
+                dataManager.downloadTempFile(tempPath);
+                return;
+            }
+        }
+
+        showMessage('文件不存在或已被清理，无法下载', 'error');
+    }
+
+    // 计算考试用时
+    calculateExamTimeUsed(startTime, endTime) {
+        if (!startTime || !endTime) {
+            return '未知';
+        }
+        
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const timeUsedMs = end - start;
+        const timeUsedMinutes = Math.round(timeUsedMs / (1000 * 60));
+        
+        return timeUsedMinutes;
+    }
+
+    // 显示临时文件状态信息（调试用）
+    showTempFilesStatus() {
+        const tempFiles = dataManager.tempFiles;
+        const fileCount = tempFiles.size;
+        const fileDetails = [];
+        
+        tempFiles.forEach((fileData, tempPath) => {
+            const uploadTime = fileData.uploadTime ? new Date(fileData.uploadTime) : null;
+            const age = uploadTime ? Math.round((new Date() - uploadTime) / (1000 * 60 * 60)) : '未知';
+            
+            fileDetails.push({
+                name: fileData.name,
+                path: tempPath,
+                uploadTime: uploadTime?.toLocaleString() || '未知',
+                ageHours: age
+            });
+        });
+        
+        console.group('📁 临时文件状态信息');
+        console.log(`总文件数: ${fileCount}`);
+        if (fileCount > 0) {
+            console.table(fileDetails);
+            console.log('提示: 临时文件默认7天后自动清理');
+        }
+        console.groupEnd();
+        
+        return { fileCount, fileDetails };
+    }
+
+    // 创建文件内容（示例实现）
+    createFileContent(fileName, submission) {
+        // 根据文件类型创建不同的示例内容
+        const extension = fileName.split('.').pop().toLowerCase();
+        let content = '';
+        
+        switch(extension) {
+            case 'txt':
+            case 'md':
+                content = `文件名: ${fileName}\n提交时间: ${new Date(submission.submittedTime).toLocaleString()}\n学生ID: ${submission.studentId}\n\n${submission.content || '无内容描述'}`;
+                break;
+            case 'pdf':
+            case 'doc':
+            case 'docx':
+                // 对于二进制文件，创建一个简单的文本表示
+                content = `这是一个模拟的${extension.toUpperCase()}文件\n原始文件名: ${fileName}\n提交时间: ${new Date(submission.submittedTime).toLocaleString()}\n学生ID: ${submission.studentId}\n\n注意: 由于浏览器限制，这里显示的是文件信息而非原始二进制内容`;
+                break;
+            default:
+                content = `文件信息:\n文件名: ${fileName}\n提交时间: ${new Date(submission.submittedTime).toLocaleString()}\n学生ID: ${submission.studentId}\n内容描述: ${submission.content || '无'}`;
+        }
+        
+        return 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
     }
 
     // 设置考试表单
     setupExamForm(examId, isResubmission = false) {
         const form = document.getElementById('examForm');
+        
+        // 如果是重新提交，加载之前的提交内容
+        if (isResubmission) {
+            this.loadPreviousExamSubmission(examId);
+        }
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1703,6 +1902,41 @@ class StudentDashboard {
             
             this.processExamSubmission(examId, content, files, isResubmission);
         });
+    }
+
+    // 加载之前的考试提交内容
+    loadPreviousExamSubmission(examId) {
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, examId);
+        if (submissions.length > 0) {
+            const submission = submissions[0];
+            
+            // 加载文本内容
+            const contentTextarea = document.getElementById('examContent');
+            if (contentTextarea && submission.content) {
+                contentTextarea.value = submission.content;
+            }
+            
+            // 加载文件
+            if (submission.files && submission.files.length > 0) {
+                this.currentExamFiles = [];
+                const fileList = document.getElementById('examFileList');
+                
+                submission.files.forEach(fileInfo => {
+                    // 为重新提交创建文件对象，但保持原有的临时路径
+                    const fileItem = {
+                        tempPath: fileInfo.tempPath,
+                        file: {
+                            name: fileInfo.originalName,
+                            size: fileInfo.size
+                        }
+                    };
+                    this.currentExamFiles.push(fileItem);
+                });
+                
+                // 更新文件列表显示
+                this.updateExamFileList(this.currentExamFiles, fileList);
+            }
+        }
     }
 
     // 开始考试计时器
@@ -1836,6 +2070,8 @@ class StudentDashboard {
             feedback: null,
             gradedTime: null,
             timeUsed: timeUsed, // 考试用时（秒）
+            examStartTime: this.examStartTime ? this.examStartTime.toISOString() : null,
+            examEndTime: new Date().toISOString(),
             submissionType: 'exam' // 标记为考试提交
         };
 
