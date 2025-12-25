@@ -844,6 +844,59 @@
     color: white;
 }
 
+.teacher-dashboard .status-badge.overdue {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+/* 批改区域截止时间信息 */
+.grading-deadline-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.grading-deadline-info i {
+    color: #3b82f6;
+}
+
+.overdue-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    animation: pulse-red 2s infinite;
+}
+
+.overdue-warning i {
+    color: white !important;
+}
+
 /* 空状态样式 */
 .teacher-dashboard .empty-state {
     text-align: center;
@@ -2371,6 +2424,23 @@
     border-color: #dee2e6;
 }
 
+.publication-tip {
+    background: #fff3cd;
+    color: #856404;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #ffeaa7;
+}
+
+.publication-tip i {
+    font-size: 16px;
+}
+
 .assignment-type-option input[type="radio"] {
     display: none;
 }
@@ -2717,5 +2787,1035 @@
     
     .settings-content {
         padding: 15px;
+    }
+}
+
+/* ==================== 批改作业模态框样式 ==================== */
+.teacher-dashboard .modal-content.extra-large {
+    max-width: 1200px;
+    width: 95%;
+    max-height: 90vh;
+}
+
+/* 批改容器 */
+.grading-container {
+    display: flex;
+    flex-direction: column;
+    height: 60vh;
+    overflow: hidden;
+}
+
+/* 批改头部 */
+.grading-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 2px solid #f3f4f6;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.assignment-info h4 {
+    margin: 0 0 8px 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.assignment-meta {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.course-name {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.submission-count {
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.grading-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* 筛选区域 */
+.grading-filters {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    min-width: 120px;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 35px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* 学生提交列表 */
+.grading-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 5px;
+}
+
+.grading-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.grading-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.grading-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.grading-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 学生提交卡片 */
+.submission-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.3s ease;
+}
+
+.submission-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-color: #3b82f6;
+}
+
+.submission-card.graded {
+    border-left: 4px solid #10b981;
+}
+
+.submission-card.pending {
+    border-left: 4px solid #f59e0b;
+}
+
+/* 学生信息头部 */
+.submission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.student-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.student-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.student-details h5 {
+    margin: 0 0 2px 0;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.student-details p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.submission-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.graded {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.submission-time {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+/* 提交内容 */
+.submission-content {
+    padding: 20px;
+}
+
+.submission-text {
+    margin-bottom: 16px;
+}
+
+.submission-text h6 {
+    margin: 0 0 8px 0;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.submission-text p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 3px solid #3b82f6;
+}
+
+.submission-files {
+    margin-bottom: 20px;
+}
+
+.submission-files h6 {
+    margin: 0 0 8px 0;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #bfdbfe;
+}
+
+.file-tag i {
+    font-size: 11px;
+}
+
+/* 批改区域 */
+.grading-area {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.grading-area h6 {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.score-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.score-input-group label {
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 60px;
+}
+
+.score-input {
+    width: 100px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+}
+
+.score-input:focus {
+    outline: none;
+    border-color: #d1d5db;
+    box-shadow: none;
+}
+
+/* 编辑模式下的分数输入框 */
+.score-input.edit-mode {
+    background: white;
+    color: #1f2937;
+    cursor: text;
+}
+
+.score-input.edit-mode:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.max-score-label {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.score-display {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+    font-family: inherit;
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: #d1d5db;
+    box-shadow: none;
+}
+
+/* 编辑模式下的评语文本框 */
+.feedback-textarea.edit-mode {
+    background: white;
+    color: #1f2937;
+    cursor: text;
+}
+
+.feedback-textarea.edit-mode:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* 批改操作按钮 */
+.grading-actions-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.btn-save-grade {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-save-grade:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+.btn-save-grade.saved,.btn-save-grade.cancel {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+/* 空状态 */
+.grading-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.grading-empty i {
+    font-size: 48px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+}
+
+.grading-empty h4 {
+    margin: 0 0 8px 0;
+    color: #374151;
+    font-size: 16px;
+}
+
+.grading-empty p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .teacher-dashboard .modal-content.extra-large {
+        width: 98%;
+        max-height: 95vh;
+    }
+    
+    .grading-container {
+        height: 70vh;
+    }
+    
+    .grading-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .grading-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .grading-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .search-box {
+        max-width: none;
+    }
+    
+    .submission-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .submission-status {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .grading-actions-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .grading-actions-row button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .assignment-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .grading-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .grading-actions button {
+        width: 100%;
+    }
+}
+
+/* ==================== 批改作业页面样式 ==================== */
+.teacher-dashboard .grading-area {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+/* 当前批改作业卡片区域 */
+.teacher-dashboard .current-grading-assignment {
+    margin-bottom: 24px;
+}
+
+.teacher-dashboard .empty-state-card {
+    border: 2px dashed #d1d5db;
+    background: #f9fafb;
+    text-align: center;
+    padding: 60px 20px;
+    border-radius: 12px;
+    color: #6b7280;
+}
+
+.teacher-dashboard .empty-state-card .empty-content i {
+    font-size: 48px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+}
+
+.teacher-dashboard .empty-state-card .empty-content h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 8px 0;
+}
+
+.teacher-dashboard .empty-state-card .empty-content p {
+    font-size: 14px;
+    margin: 0;
+    color: #6b7280;
+}
+
+/* 筛选条件区域 */
+.teacher-dashboard .grading-filters-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.teacher-dashboard .grading-filters-section h3 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.teacher-dashboard .grading-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+    gap: 16px;
+    align-items: center;
+}
+
+/* 批改作业列表区域 */
+.teacher-dashboard .grading-submissions-section {
+    margin-bottom: 24px;
+}
+
+.teacher-dashboard .grading-submissions-section h3 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 16px;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+/* 禁用状态样式 */
+.teacher-dashboard .grading-filters select:disabled,
+.teacher-dashboard .grading-filters input:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.teacher-dashboard .grading-filters select:disabled:hover,
+.teacher-dashboard .grading-filters input:disabled:hover {
+    border-color: #d1d5db;
+    box-shadow: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .teacher-dashboard .grading-filters {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .teacher-dashboard .grading-filters .search-box {
+        grid-column: 1;
+    }
+}
+
+.teacher-dashboard .grading-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.teacher-dashboard .grading-page-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.teacher-dashboard .grading-page-title h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.teacher-dashboard .grading-page-title .subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+}
+
+.teacher-dashboard .grading-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.teacher-dashboard .stat-item-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #3b82f6;
+}
+
+.teacher-dashboard .stat-item-mini i {
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+.teacher-dashboard .stat-item-mini .number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.teacher-dashboard .stat-item-mini .label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* 待批改作业卡片 */
+.teacher-dashboard .grading-assignment-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.teacher-dashboard .grading-assignment-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.teacher-dashboard .grading-assignment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    border-color: #3b82f6;
+}
+
+.teacher-dashboard .grading-assignment-card:hover::before {
+    transform: scaleX(1);
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.teacher-dashboard .assignment-urgent {
+    border-left: 4px solid #ef4444;
+    background: linear-gradient(90deg, rgba(239,68,68,0.05) 0%, transparent 100%);
+}
+
+.teacher-dashboard .assignment-urgent::before {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    transform: scaleX(1);
+}
+
+.assignment-grading-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.assignment-grading-info h4 {
+    margin: 0 0 8px 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.assignment-grading-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.meta-badge.course {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.meta-badge.type-assignment {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.meta-badge.type-exam {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.meta-badge.due-date {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+    .meta-badge.submission-count {
+        background: #f8f9fa;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+    }
+
+/* 高亮效果 */
+.teacher-dashboard .grading-assignment-card.highlight {
+    animation: highlightPulse 2s ease-in-out;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+
+@keyframes highlightPulse {
+    0% {
+        background: rgba(59,130,246,0.1);
+        transform: scale(1.02);
+    }
+    50% {
+        background: rgba(59,130,246,0.05);
+        transform: scale(1.01);
+    }
+    100% {
+        background: transparent;
+        transform: scale(1);
+    }
+}
+
+.assignment-grading-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.progress-ring {
+    width: 60px;
+    height: 60px;
+    position: relative;
+}
+
+.progress-ring circle {
+    fill: none;
+    stroke-width: 4;
+    transform: rotate(-90deg);
+    transform-origin: center;
+}
+
+.progress-ring .background {
+    stroke: #e5e7eb;
+}
+
+.progress-ring .progress {
+    stroke: #3b82f6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.assignment-grading-description {
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #3b82f6;
+}
+
+.assignment-grading-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-grade-assignment {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-grade-assignment:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16,185,129,0.3);
+}
+
+.btn-view-details {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-view-details:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(107,114,128,0.3);
+}
+
+/* 批改作业空状态 */
+.teacher-dashboard .grading-empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.grading-empty-icon {
+    font-size: 64px;
+    color: #d1d5db;
+    margin-bottom: 24px;
+}
+
+.grading-empty-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 12px 0;
+}
+
+.grading-empty-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .teacher-dashboard .grading-page-header {
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    
+    .teacher-dashboard .grading-stats {
+        width: 100%;
+        justify-content: space-around;
+    }
+    
+    .assignment-grading-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .assignment-grading-meta {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .assignment-grading-stats {
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .assignment-grading-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .assignment-grading-actions button {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .teacher-dashboard .grading-area {
+        padding: 16px;
+    }
+    
+    .teacher-dashboard .grading-assignment-card {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .teacher-dashboard .grading-page-title h3 {
+        font-size: 20px;
+    }
+    
+    .teacher-dashboard .grading-stats {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .teacher-dashboard .stat-item-mini {
+        justify-content: center;
+    }
+    
+    .meta-badge {
+        font-size: 11px;
+        padding: 3px 8px;
     }
 }

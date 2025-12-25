@@ -430,7 +430,7 @@ class DataManager {
                     id: 'sub001',
                     assignmentId: 'assign001',
                     studentId: 's001',
-                    submittedTime: '2024-02-12T14:30:00Z',
+                    submittedTime: '2025-02-12T14:30:00Z',
                     content: '线性表作业完成，包含完整的代码和测试用例。',
                     files: ['linkedlist.cpp', 'testlist.cpp', 'README.md'],
                     status: 'graded',
@@ -485,6 +485,42 @@ class DataManager {
                     score: 88,
                     feedback: '功能实现完整，网络协议设计合理。',
                     gradedTime: '2024-02-20T09:00:00Z'
+                },
+                {
+                    id: 'sub006',
+                    assignmentId: 'assign002',
+                    studentId: 's002',
+                    submittedTime: '2024-02-26T19:45:00Z',
+                    content: '二叉树遍历作业，完成了所有要求的遍历方式。',
+                    files: ['binarytree.cpp', 'traversal.cpp', 'test.cpp'],
+                    status: 'pending',
+                    score: null,
+                    feedback: null,
+                    gradedTime: null
+                },
+                {
+                    id: 'sub007',
+                    assignmentId: 'assign003',
+                    studentId: 's001',
+                    submittedTime: '2024-03-15T11:00:00Z',
+                    content: '期中考试答卷，完成了所有题目。',
+                    files: ['exam.pdf', 'answers.pdf'],
+                    status: 'pending',
+                    score: null,
+                    feedback: null,
+                    gradedTime: null
+                },
+                {
+                    id: 'sub008',
+                    assignmentId: 'assign003',
+                    studentId: 's002',
+                    submittedTime: '2024-03-15T10:45:00Z',
+                    content: '期中考试答卷，大部分题目完成。',
+                    files: ['exam_answers.pdf'],
+                    status: 'pending',
+                    score: null,
+                    feedback: null,
+                    gradedTime: null
                 }
             ],
             grades: [],
@@ -583,6 +619,17 @@ class DataManager {
         // 为现有选课记录添加type字段
         this.data.enrollments.forEach(enrollment => {
             if (!enrollment.type) enrollment.type = 'enrolled'; // 默认为正式选修
+        });
+        
+        // 为现有作业添加teacherId字段（如果缺失）
+        this.data.assignments.forEach(assignment => {
+            if (!assignment.teacherId && assignment.courseId) {
+                // 通过courseId查找课程，然后获取teacherId
+                const course = this.data.courses.find(c => c.id === assignment.courseId);
+                if (course && course.teacherId) {
+                    assignment.teacherId = course.teacherId;
+                }
+            }
         });
         
         console.log('数据兼容性检查完成');
@@ -756,6 +803,13 @@ class DataManager {
     getCourseAssignments(courseId) {
         return this.data.assignments.filter(assignment => 
             assignment.courseId === courseId
+        );
+    }
+
+    // 获取教师的作业列表
+    getTeacherAssignments(teacherId) {
+        return this.data.assignments.filter(assignment => 
+            assignment.teacherId === teacherId
         );
     }
 
@@ -935,10 +989,17 @@ class DataManager {
             return false;
         }
         
-        // 更新数据，保留原有字段
+        // 更新数据，保留原有字段，但不使用值为null或undefined的新字段
+        const filteredNewData = {};
+        for (const key in newData) {
+            if (newData[key] !== null && newData[key] !== undefined) {
+                filteredNewData[key] = newData[key];
+            }
+        }
+        
         this.data[collection][index] = {
             ...this.data[collection][index],
-            ...newData,
+            ...filteredNewData,
             updatedAt: new Date().toISOString()
         };
         

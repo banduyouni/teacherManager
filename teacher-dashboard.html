@@ -224,11 +224,64 @@
                     <button class="tab-btn" data-tab="exams">
                         <i class="fas fa-clipboard-check"></i> 考试
                     </button>
+                    <button class="tab-btn" data-tab="grading">
+                        <i class="fas fa-graduation-cap"></i> 批改作业/考试
+                    </button>
                 </div>
 
                 <div class="assignments-content">
-                    <div class="assignments-list" id="assignmentsList">
-                        <!-- 作业考试列表将通过JS动态生成 -->
+                    <!-- 作业列表 -->
+                    <div class="assignments-list" id="assignmentsList" data-tab-content="assignments">
+                        <!-- 作业列表将通过JS动态生成 -->
+                    </div>
+                    
+                    <!-- 考试列表 -->
+                    <div class="assignments-list" id="examsList" data-tab-content="exams" style="display: none;">
+                        <!-- 考试列表将通过JS动态生成 -->
+                    </div>
+                    
+                    <!-- 批改作业区域 -->
+                    <div class="grading-area" id="gradingArea" data-tab-content="grading" style="display: none;">
+                        <!-- 当前批改作业卡片 - 初始为空状态显示提示 -->
+                        <div class="current-grading-assignment" id="currentGradingAssignment">
+                            <div class="grading-assignment-card empty-state-card">
+                                <div class="empty-content">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <h3>请选择要批改的作业</h3>
+                                    <p>使用下方的筛选条件选择作业，开始批改</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 筛选条件 -->
+                        <div class="grading-filters-section">
+                            <h3>筛选条件</h3>
+                            <div class="grading-filters">
+                                <select class="form-control" id="gradingCourseFilter">
+                                    <option value="">选择课程</option>
+                                </select>
+                                <select class="form-control" id="gradingAssignmentFilter" disabled>
+                                    <option value="">请先选择课程</option>
+                                </select>
+                                <select class="form-control" id="gradingStatusFilter">
+                                    <option value="all">全部状态</option>
+                                    <option value="pending">待批改</option>
+                                    <option value="graded">已批改</option>
+                                </select>
+                                <div class="search-box">
+                                    <input type="text" id="gradingSearchInput" placeholder="搜索学生姓名" disabled>
+                                    <i class="fas fa-search"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 批改作业列表 -->
+                        <div class="grading-submissions-section" id="gradingSubmissionsSection" style="display: none;">
+                            <h3>批改作业</h3>
+                            <div class="grading-list" id="gradingList">
+                                <!-- 学生提交列表 -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -580,10 +633,6 @@
                             <label for="assignmentMaxScore">满分</label>
                             <input type="number" id="assignmentMaxScore" name="assignmentMaxScore" min="1" max="200" required value="100">
                         </div>
-                        <div class="form-group">
-                            <label for="assignmentDuration">考试时长（分钟）</label>
-                            <input type="number" id="assignmentDuration" name="assignmentDuration" min="30" max="300" placeholder="仅考试时需要">
-                        </div>
                     </div>
 
                     <div class="form-group">
@@ -706,10 +755,6 @@
                             <label for="editAssignmentMaxScore">满分</label>
                             <input type="number" id="editAssignmentMaxScore" name="editAssignmentMaxScore" min="1" max="200" required value="100">
                         </div>
-                        <div class="form-group">
-                            <label for="editAssignmentDuration">考试时长（分钟）</label>
-                            <input type="number" id="editAssignmentDuration" name="editAssignmentDuration" min="30" max="300" placeholder="仅考试时需要">
-                        </div>
                     </div>
 
                     <!-- 高级设置 -->
@@ -744,6 +789,56 @@
                 <button type="submit" form="editAssignmentForm" class="btn-primary">
                     <i class="fas fa-save"></i> 保存修改
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批改作业模态框 -->
+    <div id="gradingModal" class="modal">
+        <div class="modal-content extra-large">
+            <div class="modal-header">
+                <h3 id="gradingModalTitle">批改作业</h3>
+                <span class="close" id="closeGradingModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="grading-container">
+                    <div class="grading-header">
+                        <div class="assignment-info">
+                            <h4 id="gradingAssignmentTitle">作业标题</h4>
+                            <div class="assignment-meta">
+                                <span class="course-name" id="gradingCourseName">课程名称</span>
+                                <span class="submission-count" id="gradingSubmissionCount">提交人数: 0</span>
+                            </div>
+                        </div>
+                        <div class="grading-actions">
+                            <button class="btn-secondary" id="saveAllGradesBtn">
+                                <i class="fas fa-save"></i> 批量保存
+                            </button>
+                            <button class="btn-info" id="exportGradesBtn">
+                                <i class="fas fa-download"></i> 导出成绩
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grading-filters">
+                        <select id="gradingFilter" class="filter-select">
+                            <option value="all">全部提交</option>
+                            <option value="pending">待批改</option>
+                            <option value="graded">已批改</option>
+                        </select>
+                        <div class="search-box">
+                            <input type="text" id="gradingSearchInput" placeholder="搜索学生姓名">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+
+                    <div class="grading-list" id="gradingList">
+                        <!-- 动态生成学生提交列表 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelGrading">关闭</button>
             </div>
         </div>
     </div>
