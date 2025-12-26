@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理仪表盘 - 成绩管理教学平台</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/system-admin.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="system-admin-dashboard">
+    <!-- 顶部导航 -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <img src="images/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+                <h1>成绩管理教学平台</h1>
+            </div>
+            <div class="nav-right">
+                <div class="user-info">
+                    <img src="images/avatar.jpg" alt="用户头像" class="user-avatar" onerror="this.src='https://picsum.photos/seed/sysadmin/40/40.jpg'">
+                    <span class="user-name" id="currentUserName">张系统</span>
+                    <span class="user-type">系统管理员</span>
+                </div>
+                <div class="nav-actions">
+                    <button class="notification-btn" id="notificationBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">12</span>
+                    </button>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        退出
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 侧边导航 -->
+        <nav class="sidebar">
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="dashboard">
+                    <a href="#dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>仪表盘</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="users">
+                    <a href="#users">
+                        <i class="fas fa-users"></i>
+                        <span>用户管理</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="permissions">
+                    <a href="#permissions">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>权限管理</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="logs">
+                    <a href="#logs">
+                        <i class="fas fa-list-alt"></i>
+                        <span>操作日志</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="backup">
+                    <a href="#backup">
+                        <i class="fas fa-database"></i>
+                        <span>数据备份</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="system">
+                    <a href="#system">
+                        <i class="fas fa-cogs"></i>
+                        <span>系统设置</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="monitoring">
+                    <a href="#monitoring">
+                        <i class="fas fa-chart-area"></i>
+                        <span>系统监控</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="security">
+                    <a href="#security">
+                        <i class="fas fa-lock"></i>
+                        <span>安全管理</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="profile">
+                    <a href="#profile">
+                        <i class="fas fa-user"></i>
+                        <span>个人信息</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 仪表盘页面 -->
+            <section id="dashboard" class="page-content active">
+                <div class="content-header">
+                    <h2>系统管理仪表盘</h2>
+                    <p>欢迎回来，<span id="welcomeName">张系统</span>！</p>
+                </div>
+
+                <!-- 系统状态卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalUsers">4,286</h3>
+                            <p>系统用户总数</p>
+                            <span class="stat-change positive">+2.5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="systemUptime">99.8%</h3>
+                            <p>系统可用性</p>
+                            <span class="stat-change positive">正常运行</span>
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon">
+                            <i class="fas fa-hdd"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="diskUsage">78%</h3>
+                            <p>磁盘使用率</p>
+                            <span class="stat-change negative">需要关注</span>
+                        </div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-icon">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="memoryUsage">65%</h3>
+                            <p>内存使用率</p>
+                            <span class="stat-change positive">正常</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统性能图表 -->
+                <div class="performance-charts">
+                    <div class="chart-container">
+                        <h3>系统负载趋势</h3>
+                        <div class="performance-chart" id="performanceChart">
+                            <!-- 图表将通过JS动态生成 -->
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>用户访问统计</h3>
+                        <div class="access-chart" id="accessChart">
+                            <!-- 图表将通过JS动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="quick-actions">
+                    <h3>系统管理快速操作</h3>
+                    <div class="action-grid">
+                        <button class="action-card" data-action="create-user">
+                            <i class="fas fa-user-plus"></i>
+                            <span>创建用户</span>
+                        </button>
+                        <button class="action-card" data-action="backup-system">
+                            <i class="fas fa-save"></i>
+                            <span>立即备份</span>
+                        </button>
+                        <button class="action-card" data-action="view-logs">
+                            <i class="fas fa-file-alt"></i>
+                            <span>查看日志</span>
+                        </button>
+                        <button class="action-card" data-action="system-health">
+                            <i class="fas fa-heartbeat"></i>
+                            <span>健康检查</span>
+                        </button>
+                        <button class="action-card" data-action="security-scan">
+                            <i class="fas fa-shield-virus"></i>
+                            <span>安全扫描</span>
+                        </button>
+                        <button class="action-card" data-action="clear-cache">
+                            <i class="fas fa-broom"></i>
+                            <span>清理缓存</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 系统警告 -->
+                <div class="system-alerts">
+                    <h3>系统警告与通知</h3>
+                    <div class="alerts-list">
+                        <div class="alert-item warning">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>磁盘空间不足</h4>
+                                <p>/data分区使用率达到78%，建议清理或扩容</p>
+                                <span class="alert-time">2小时前</span>
+                            </div>
+                            <button class="alert-action">处理</button>
+                        </div>
+                        <div class="alert-item info">
+                            <div class="alert-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>系统更新可用</h4>
+                                <p>发现新版本v2.1.0，建议在维护时间进行更新</p>
+                                <span class="alert-time">1天前</span>
+                            </div>
+                            <button class="alert-action">查看</button>
+                        </div>
+                        <div class="alert-item success">
+                            <div class="alert-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>备份完成</h4>
+                                <p>系统自动备份已成功完成</p>
+                                <span class="alert-time">2天前</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近操作日志 -->
+                <div class="recent-logs">
+                    <h3>最近操作日志</h3>
+                    <div class="logs-table-container">
+                        <table class="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作用户</th>
+                                    <th>操作类型</th>
+                                    <th>操作内容</th>
+                                    <th>IP地址</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentLogsBody">
+                                <!-- 日志数据将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 用户管理页面 -->
+            <section id="users" class="page-content">
+                <div class="content-header">
+                    <h2>用户管理</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="createUserBtn">
+                            <i class="fas fa-user-plus"></i>
+                            创建用户
+                        </button>
+                        <button class="btn-secondary" id="batchImportBtn">
+                            <i class="fas fa-file-import"></i>
+                            批量导入
+                        </button>
+                        <button class="btn-success" id="exportUsersBtn">
+                            <i class="fas fa-file-export"></i>
+                            导出用户
+                        </button>
+                    </div>
+                </div>
+
+                <div class="users-container">
+                    <div class="users-filter">
+                        <input type="text" class="search-input" id="userSearch" placeholder="搜索用户...">
+                        <select class="filter-select" id="userTypeFilter">
+                            <option value="">全部用户类型</option>
+                            <option value="student">学生</option>
+                            <option value="teacher">教师</option>
+                            <option value="academicAdmin">教学管理员</option>
+                            <option value="systemAdmin">系统管理员</option>
+                        </select>
+                        <select class="filter-select" id="userStatusFilter">
+                            <option value="">全部状态</option>
+                            <option value="active">正常</option>
+                            <option value="locked">锁定</option>
+                            <option value="inactive">未激活</option>
+                        </select>
+                    </div>
+                    <div class="users-table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllUsers"></th>
+                                    <th>用户ID</th>
+                                    <th>用户名</th>
+                                    <th>姓名</th>
+                                    <th>用户类型</th>
+                                    <th>邮箱</th>
+                                    <th>最后登录</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- 用户数据将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="usersPagination">
+                        <!-- 分页将通过JS动态生成 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 权限管理页面 -->
+            <section id="permissions" class="page-content">
+                <div class="content-header">
+                    <h2>权限管理</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="createRoleBtn">
+                            <i class="fas fa-plus"></i>
+                            创建角色
+                        </button>
+                        <button class="btn-secondary" id="exportRolesBtn">
+                            <i class="fas fa-file-export"></i>
+                            导出权限配置
+                        </button>
+                    </div>
+                </div>
+
+                <div class="permissions-container">
+                    <div class="permissions-tabs">
+                        <button class="tab-btn active" data-tab="roles">角色管理</button>
+                        <button class="tab-btn" data-tab="permissions">权限配置</button>
+                        <button class="tab-btn" data-tab="assignments">权限分配</button>
+                    </div>
+
+                    <div class="permissions-content">
+                        <!-- 角色管理标签页 -->
+                        <div class="tab-content active" id="rolesTab">
+                            <div class="roles-grid" id="rolesGrid">
+                                <!-- 角色卡片将通过JS动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 权限配置标签页 -->
+                        <div class="tab-content" id="permissionsTab">
+                            <div class="permissions-tree" id="permissionsTree">
+                                <!-- 权限树将通过JS动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 权限分配标签页 -->
+                        <div class="tab-content" id="assignmentsTab">
+                            <div class="assignment-container">
+                                <div class="assignment-filters">
+                                    <select class="form-control" id="assignmentRoleFilter">
+                                        <option value="">选择角色</option>
+                                    </select>
+                                    <select class="form-control" id="assignmentUserFilter">
+                                        <option value="">选择用户</option>
+                                    </select>
+                                </div>
+                                <div class="assignment-results" id="assignmentResults">
+                                    <!-- 分配结果将通过JS动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 操作日志页面 -->
+            <section id="logs" class="page-content">
+                <div class="content-header">
+                    <h2>操作日志</h2>
+                    <div class="header-actions">
+                        <select class="form-control" id="logTypeFilter">
+                            <option value="">全部日志类型</option>
+                            <option value="login">登录日志</option>
+                            <option value="operation">操作日志</option>
+                            <option value="error">错误日志</option>
+                            <option value="security">安全日志</option>
+                        </select>
+                        <input type="date" class="form-control" id="logStartDate">
+                        <input type="date" class="form-control" id="logEndDate">
+                        <button class="btn-primary" id="searchLogsBtn">
+                            <i class="fas fa-search"></i>
+                            查询
+                        </button>
+                        <button class="btn-danger" id="clearLogsBtn">
+                            <i class="fas fa-trash"></i>
+                            清理日志
+                        </button>
+                        <button class="btn-success" id="exportLogsBtn">
+                            <i class="fas fa-download"></i>
+                            导出日志
+                        </button>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <div class="logs-summary">
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <h4>今日登录</h4>
+                                <span class="summary-value login-count">1,234</span>
+                            </div>
+                            <div class="summary-card">
+                                <h4>操作记录</h4>
+                                <span class="summary-value operation-count">5,678</span>
+                            </div>
+                            <div class="summary-card">
+                                <h4>错误日志</h4>
+                                <span class="summary-value error-count">12</span>
+                            </div>
+                            <div class="summary-card">
+                                <h4>安全事件</h4>
+                                <span class="summary-value security-count">3</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="logs-table-container">
+                        <table class="logs-table detailed">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>用户</th>
+                                    <th>类型</th>
+                                    <th>模块</th>
+                                    <th>操作</th>
+                                    <th>详情</th>
+                                    <th>IP地址</th>
+                                    <th>用户代理</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <!-- 日志数据将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="logsPagination">
+                        <!-- 分页将通过JS动态生成 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 数据备份页面 -->
+            <section id="backup" class="page-content">
+                <div class="content-header">
+                    <h2>数据备份与恢复</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="createBackupBtn">
+                            <i class="fas fa-plus"></i>
+                            创建备份
+                        </button>
+                        <button class="btn-secondary" id="scheduleBackupBtn">
+                            <i class="fas fa-clock"></i>
+                            定时备份设置
+                        </button>
+                    </div>
+                </div>
+
+                <div class="backup-container">
+                    <div class="backup-info">
+                        <div class="info-cards">
+                            <div class="info-card">
+                                <h4>上次备份时间</h4>
+                                <span class="info-value last-backup">2024-12-17 02:00</span>
+                            </div>
+                            <div class="info-card">
+                                <h4>备份文件大小</h4>
+                                <span class="info-value backup-size">2.3 GB</span>
+                            </div>
+                            <div class="info-card">
+                                <h4>备份总数</h4>
+                                <span class="info-value backup-count">24</span>
+                            </div>
+                            <div class="info-card">
+                                <h4>存储空间</h4>
+                                <span class="info-value storage-usage">15.6 GB / 50 GB</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="backup-list-container">
+                        <h3>备份文件列表</h3>
+                        <div class="backup-list" id="backupList">
+                            <!-- 备份文件列表将通过JS动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="restore-section">
+                        <h3>数据恢复</h3>
+                        <div class="restore-form">
+                            <div class="form-group">
+                                <label for="restoreFile">选择备份文件</label>
+                                <select class="form-control" id="restoreFile">
+                                    <option value="">请选择备份文件</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="confirmRestore">
+                                    我确认要进行数据恢复操作，这将覆盖当前数据
+                                </label>
+                            </div>
+                            <button class="btn-danger" id="startRestoreBtn" disabled>
+                                <i class="fas fa-undo"></i>
+                                开始恢复
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系统设置页面 -->
+            <section id="system" class="page-content">
+                <div class="content-header">
+                    <h2>系统设置</h2>
+                </div>
+
+                <div class="system-settings-container">
+                    <div class="settings-tabs">
+                        <button class="tab-btn active" data-tab="basic">基本设置</button>
+                        <button class="tab-btn" data-tab="security">安全设置</button>
+                        <button class="tab-btn" data-tab="notification">通知设置</button>
+                        <button class="tab-btn" data-tab="maintenance">维护设置</button>
+                    </div>
+
+                    <div class="settings-content">
+                        <!-- 基本设置 -->
+                        <div class="tab-content active" id="basicTab">
+                            <form class="settings-form">
+                                <div class="form-section">
+                                    <h3>系统基本信息</h3>
+                                    <div class="form-group">
+                                        <label for="systemName">系统名称</label>
+                                        <input type="text" id="systemName" value="成绩管理教学平台" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="systemVersion">系统版本</label>
+                                        <input type="text" id="systemVersion" value="v2.0.1" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adminEmail">管理员邮箱</label>
+                                        <input type="email" id="adminEmail" value="admin@university.edu.cn" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h3>系统参数</h3>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="maxLoginAttempts">最大登录尝试次数</label>
+                                            <input type="number" id="maxLoginAttempts" value="5" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="sessionTimeout">会话超时时间（分钟）</label>
+                                            <input type="number" id="sessionTimeout" value="120" class="form-control">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">保存设置</button>
+                                    <button type="button" class="btn-secondary">重置</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- 其他设置标签页内容类似，这里省略以节省空间 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系统监控页面 -->
+            <section id="monitoring" class="page-content">
+                <div class="content-header">
+                    <h2>系统监控</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="refreshMonitoringBtn">
+                            <i class="fas fa-sync"></i>
+                            刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <div class="monitoring-container">
+                    <div class="system-metrics">
+                        <div class="metric-card">
+                            <h3>CPU使用率</h3>
+                            <div class="metric-chart cpu-chart" id="cpuChart"></div>
+                            <span class="metric-value">45%</span>
+                        </div>
+                        <div class="metric-card">
+                            <h3>内存使用率</h3>
+                            <div class="metric-chart memory-chart" id="memoryChart"></div>
+                            <span class="metric-value">65%</span>
+                        </div>
+                        <div class="metric-card">
+                            <h3>磁盘使用率</h3>
+                            <div class="metric-chart disk-chart" id="diskChart"></div>
+                            <span class="metric-value">78%</span>
+                        </div>
+                        <div class="metric-card">
+                            <h3>网络流量</h3>
+                            <div class="metric-chart network-chart" id="networkChart"></div>
+                            <span class="metric-value">1.2 MB/s</span>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-logs">
+                        <h3>系统事件</h3>
+                        <div class="events-list" id="eventsList">
+                            <!-- 系统事件将通过JS动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 安全管理页面 -->
+            <section id="security" class="page-content">
+                <div class="content-header">
+                    <h2>安全管理</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="securityScanBtn">
+                            <i class="fas fa-shield-virus"></i>
+                            安全扫描
+                        </button>
+                    </div>
+                </div>
+
+                <div class="security-container">
+                    <div class="security-overview">
+                        <div class="security-cards">
+                            <div class="security-card success">
+                                <i class="fas fa-check-circle"></i>
+                                <h4>防火墙状态</h4>
+                                <span>正常运行</span>
+                            </div>
+                            <div class="security-card warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h4>密码策略</h4>
+                                <span>需要加强</span>
+                            </div>
+                            <div class="security-card success">
+                                <i class="fas fa-shield-alt"></i>
+                                <h4>SSL证书</h4>
+                                <span>有效</span>
+                            </div>
+                            <div class="security-card info">
+                                <i class="fas fa-lock"></i>
+                                <h4>数据加密</h4>
+                                <span>启用</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="security-logs">
+                        <h3>安全事件日志</h3>
+                        <table class="security-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>事件类型</th>
+                                    <th>威胁级别</th>
+                                    <th>源IP</th>
+                                    <th>描述</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="securityLogsBody">
+                                <!-- 安全日志将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 个人信息页面 -->
+            <section id="profile" class="page-content">
+                <div class="content-header">
+                    <h2>个人信息</h2>
+                    <p>管理您的个人资料和系统权限</p>
+                </div>
+
+                <div class="profile-container">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="avatar-upload">
+                                <img src="images/avatar.jpg" alt="用户头像" class="profile-avatar" onerror="this.src='https://picsum.photos/seed/sysadmin/120/120.jpg'">
+                                <button class="upload-btn">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                            <h3>张系统</h3>
+                            <p>信息中心 · 系统管理员</p>
+                        </div>
+
+                        <div class="profile-info">
+                            <div class="info-group">
+                                <h4>基本信息</h4>
+                                <div class="info-item">
+                                    <label>工号</label>
+                                    <span>S10001</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>姓名</label>
+                                    <span>张系统</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>部门</label>
+                                    <span>信息中心</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>职位</label>
+                                    <span>系统管理员</span>
+                                </div>
+                            </div>
+
+                            <div class="info-group">
+                                <h4>联系方式</h4>
+                                <div class="info-item">
+                                    <label>邮箱</label>
+                                    <span>zhang.admin@university.edu.cn</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>电话</label>
+                                    <span>136****9876</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>办公室</label>
+                                    <span>信息中心 C302</span>
+                                </div>
+                            </div>
+
+                            <div class="info-group">
+                                <h4>权限信息</h4>
+                                <div class="info-item">
+                                    <label>系统权限</label>
+                                    <span>超级管理员</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>管理范围</label>
+                                    <span>全系统</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>最后登录</label>
+                                    <span>2024-12-18 10:30</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button class="btn-secondary">修改信息</button>
+                            <button class="btn-primary">修改密码</button>
+                            <button class="btn-warning">重置权限</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 创建用户模态框 -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>创建用户</h3>
+                <span class="close" id="closeCreateUserModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newUserType">用户类型</label>
+                            <select id="newUserType" name="userType" required>
+                                <option value="">请选择</option>
+                                <option value="student">学生</option>
+                                <option value="teacher">教师</option>
+                                <option value="academicAdmin">教学管理员</option>
+                                <option value="systemAdmin">系统管理员</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="newUsername">用户名</label>
+                            <input type="text" id="newUsername" name="username" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newName">姓名</label>
+                            <input type="text" id="newName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newEmail">邮箱</label>
+                            <input type="email" id="newEmail" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">初始密码</label>
+                        <input type="password" id="newPassword" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="requirePasswordChange" checked>
+                            强制首次登录修改密码
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelCreateUser">取消</button>
+                <button type="submit" form="createUserForm" class="btn-primary">创建用户</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 批量导入学生账号模态框 -->
+    <div id="batchImportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>批量导入学生账号</h3>
+                <span class="close" id="closeBatchImportModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="import-tips" style="margin-bottom:12px;opacity:0.85;">
+                    <p>支持 CSV / XLS / XLSX。请包含列：学号(studentNo)、姓名(name)、班级(className)（可选：邮箱(email)）。</p>
+                    <button type="button" class="btn-secondary" id="downloadImportTemplate">下载CSV模板</button>
+                </div>
+                <form id="batchImportForm">
+                    <div class="form-group">
+                        <label for="importFile">选择文件</label>
+                        <input type="file" id="importFile" accept=".csv,.xls,.xlsx" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="importDefaultPassword">初始密码</label>
+                            <input type="text" id="importDefaultPassword" value="123456" required>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <label style="display:flex;gap:8px;align-items:center;">
+                                <input type="checkbox" id="importRequirePasswordChange" checked>
+                                强制首次登录修改密码
+                            </label>
+                        </div>
+                    </div>
+                </form>
+                <div id="importResult" style="margin-top:12px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelBatchImport">取消</button>
+                <button type="submit" form="batchImportForm" class="btn-primary">开始导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 首次登录强制修改密码 -->
+    <div id="forceChangePasswordModal" class="modal forgot-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content forgot-modal-content">
+            <div class="modal-header">
+                <h3>首次登录，请修改密码</h3>
+            </div>
+            <div class="modal-body">
+                <form id="forceChangePasswordForm">
+                    <div class="form-group">
+                        <label for="forceOldPassword">原密码</label>
+                        <input type="password" id="forceOldPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceNewPassword">新密码</label>
+                        <input type="password" id="forceNewPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceConfirmPassword">确认新密码</label>
+                        <input type="password" id="forceConfirmPassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-primary">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 消息提示 -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <script src="js/dataManager.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/systemAdmin.js"></script>
+</body>
+</html>

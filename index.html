@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩管理教学平台 - 首页</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/homepage.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="guest-homepage">
+    <!-- 顶部导航 -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <img src="images/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+                <h1>成绩管理教学平台</h1>
+            </div>
+            <div class="nav-right">
+                <div class="nav-actions">
+                    <button class="login-btn" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        登录
+                    </button>
+                    <button class="register-btn" id="registerBtn" style="display: none;">
+                        <i class="fas fa-user-plus"></i>
+                        注册
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 首页轮播图 -->
+        <section class="hero-section">
+            <div class="carousel-container">
+                <div class="carousel">
+                    <div class="carousel-item active">
+                        <img src="https://picsum.photos/seed/edu1/1200x400.jpg" alt="教学平台" onerror="this.src='https://via.placeholder.com/1200x400/f3f4f6/6b7280?text=成绩管理教学平台'">
+                        <div class="carousel-content">
+                            <h2>欢迎使用成绩管理教学平台</h2>
+                            <p>智能化、便捷化的教学管理系统</p>
+                            <button class="btn-primary explore-btn" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})">
+                                <i class="fas fa-search"></i>
+                                探索课程
+                            </button>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="https://picsum.photos/seed/edu2/1200x400.jpg" alt="在线学习" onerror="this.src='https://via.placeholder.com/1200x400/e0e7ff/4f46e5?text=在线学习体验'">
+                        <div class="carousel-content">
+                            <h2>便捷的在线学习体验</h2>
+                            <p>随时随地获取优质教育资源</p>
+                            <button class="btn-primary explore-btn" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})">
+                                <i class="fas fa-graduation-cap"></i>
+                                开始学习
+                            </button>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="https://picsum.photos/seed/edu3/1200x400.jpg" alt="成绩管理" onerror="this.src='https://via.placeholder.com/1200x400/dcfce7/166534?text=成绩管理系统'">
+                        <div class="carousel-content">
+                            <h2>透明的成绩管理系统</h2>
+                            <p>实时查看学习进度和成绩反馈</p>
+                            <button class="btn-primary explore-btn" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})">
+                                <i class="fas fa-chart-line"></i>
+                                查看详情
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-controls">
+                    <button class="carousel-btn prev-btn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-btn next-btn" onclick="changeSlide(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="carousel-indicators">
+                    <span class="indicator active" onclick="goToSlide(0)"></span>
+                    <span class="indicator" onclick="goToSlide(1)"></span>
+                    <span class="indicator" onclick="goToSlide(2)"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 平台特色 -->
+        <section class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>平台特色</h2>
+                    <p>为学生、教师和管理员提供全方位的教学管理服务</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h3>丰富的课程资源</h3>
+                        <p>涵盖各专业领域的精品课程，支持文档、音视频等多种学习资源</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3>智能成绩管理</h3>
+                        <p>多维度的成绩统计分析，实时掌握学习进度和成绩动态</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>多元化角色</h3>
+                        <p>支持学生、教师、教学管理员、系统管理员等多种角色协同工作</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>安全可靠</h3>
+                        <p>采用先进的加密技术，确保数据安全和用户隐私</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 课程浏览（游客模式） -->
+        <section id="courses" class="courses-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>课程浏览</h2>
+                    <p>浏览平台上的精品课程（游客模式）</p>
+                </div>
+
+                <!-- 搜索和筛选 -->
+                <div class="search-filters">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="courseSearch" placeholder="搜索课程名称、教师...">
+                        <button class="search-btn" id="searchBtn">搜索</button>
+                    </div>
+                    <div class="filter-options">
+                        <select id="departmentFilter" class="filter-select">
+                            <option value="">全部院系</option>
+                            <option value="cs">计算机学院</option>
+                            <option value="ee">电子信息学院</option>
+                            <option value="ma">数学学院</option>
+                            <option value="ph">物理学院</option>
+                            <option value="ch">化学学院</option>
+                        </select>
+                        <select id="creditFilter" class="filter-select">
+                            <option value="">全部学分</option>
+                            <option value="1">1学分</option>
+                            <option value="2">2学分</option>
+                            <option value="3">3学分</option>
+                            <option value="4">4学分</option>
+                        </select>
+                        <select id="typeFilter" class="filter-select">
+                            <option value="">全部类型</option>
+                            <option value="required">必修课</option>
+                            <option value="elective">选修课</option>
+                            <option value="core">核心课</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 课程网格 -->
+                <div class="courses-grid" id="coursesList">
+                    <!-- 课程卡片将通过JS动态生成 -->
+                </div>
+
+                <!-- 加载更多 -->
+                <div class="load-more-container">
+                    <button class="btn-secondary" id="loadMoreBtn">
+                        <i class="fas fa-plus"></i>
+                        加载更多课程
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 统计数据 -->
+        <section class="stats-section">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" data-count="1500">0</div>
+                        <div class="stat-label">在线课程</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" data-count="50000">0</div>
+                        <div class="stat-label">注册学生</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" data-count="800">0</div>
+                        <div class="stat-label">授课教师</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" data-count="95">0</div>
+                        <div class="stat-label">满意度%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 游客提示 -->
+        <section class="guest-notice">
+            <div class="container">
+                <div class="notice-card">
+                    <div class="notice-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="notice-content">
+                        <h3>游客模式</h3>
+                        <p>您正在以游客身份浏览，仅可查看公开课程信息。登录后可获得完整功能体验，包括课程选修、在线学习、成绩查询等。</p>
+                        <button class="btn-primary" id="loginPromptBtn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            立即登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>关于平台</h4>
+                    <p>成绩管理教学平台是面向高校的智能化教学管理系统，提供课程管理、成绩统计、在线学习等全方位服务。</p>
+                </div>
+                <div class="footer-section">
+                    <h4>快速链接</h4>
+                    <ul>
+                        <li><a href="#courses">课程浏览</a></li>
+                        <li><a href="#features">平台特色</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>联系我们</h4>
+                    <p><i class="fas fa-envelope"></i> admin@teachplatform.edu.cn</p>
+                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 成绩管理教学平台. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登录弹窗 -->
+    <div id="loginModal" class="modal login-modal">
+        <div class="modal-backdrop" onclick="closeLoginModal()"></div>
+        <div class="modal-content login-modal-content">
+            <!-- 关闭按钮 -->
+            <button class="modal-close" onclick="closeLoginModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <!-- 登录头部 -->
+            <div class="login-modal-header">
+                <img src="images/logo.png" alt="系统logo" class="login-logo" onerror="this.style.display='none'">
+                <h2>用户登录</h2>
+                <p>欢迎回到成绩管理教学平台</p>
+            </div>
+
+            <!-- 登录表单 -->
+            <form id="loginModalForm" class="login-modal-form">
+                <div class="form-group">
+                    <label for="modalUsername">用户名</label>
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="modalUsername" name="username" placeholder="请输入用户名/学号" required>
+                    </div>
+                    <div class="error-message" id="modalUsernameError">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>请输入用户名</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalPassword">密码</label>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="modalPassword" name="password" placeholder="请输入密码" required>
+                        <button type="button" class="toggle-password" id="modalTogglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="error-message" id="modalPasswordError">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>请输入密码</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalUserType">用户类型</label>
+                    <div class="input-group">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="modalUserType" name="userType" required>
+                            <option value="">请选择用户类型</option>
+                            <option value="student">学生</option>
+                            <option value="teacher">教师</option>
+                            <option value="academicAdmin">教学管理员</option>
+                            <option value="systemAdmin">系统管理员</option>
+                        </select>
+                    </div>
+                    <div class="error-message" id="modalUserTypeError">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>请选择用户类型</span>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <div class="remember-me">
+                        <input type="checkbox" id="modalRemember" name="remember">
+                        <label for="modalRemember">记住我</label>
+                    </div>
+                    <a href="#" class="forgot-password" id="modalForgotPassword">忘记密码？</a>
+                </div>
+
+                <button type="submit" class="login-submit-btn" id="modalLoginBtn">
+                    <span id="loginBtnText">登录</span>
+                    <i class="fas fa-arrow-right" id="loginBtnIcon"></i>
+                    <i class="fas fa-spinner fa-spin" id="loginBtnSpinner" style="display: none;"></i>
+                </button>
+            </form>
+
+            <!-- 登录底部 -->
+            <div class="login-modal-footer">
+                <div class="version-info">v2.0.1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘记密码弹窗 -->
+    <div id="forgotPasswordModal" class="modal forgot-modal">
+        <div class="modal-backdrop" onclick="closeForgotPasswordModal()"></div>
+        <div class="modal-content forgot-modal-content">
+            <div class="modal-header">
+                <h3>忘记密码</h3>
+                <button class="modal-close" onclick="closeForgotPasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="resetUsername">用户名</label>
+                        <input type="text" id="resetUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resetUserType">用户类型</label>
+                        <select id="resetUserType" required>
+                            <option value="student">学生</option>
+                            <option value="teacher">教师</option>
+                            <option value="academicAdmin">教学管理员</option>
+                            <option value="systemAdmin">系统管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resetEmail">邮箱</label>
+                        <input type="email" id="resetEmail" placeholder="请输入您的邮箱" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelReset">取消</button>
+                        <button type="submit" class="btn-primary">发送重置链接</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 重置密码弹窗（演示：通过邮箱验证后获取令牌） -->
+    <div id="resetPasswordModal" class="modal forgot-modal">
+        <div class="modal-backdrop" onclick="closeResetPasswordModal()"></div>
+        <div class="modal-content forgot-modal-content">
+            <div class="modal-header">
+                <h3>重置密码</h3>
+                <button class="modal-close" onclick="closeResetPasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="resetPasswordForm">
+                    <div class="form-group">
+                        <label for="resetToken">重置令牌</label>
+                        <input type="text" id="resetToken" placeholder="请输入邮件中的重置令牌" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">新密码</label>
+                        <input type="password" id="newPassword" placeholder="请输入新密码" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">确认新密码</label>
+                        <input type="password" id="confirmNewPassword" placeholder="再次输入新密码" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelResetPassword">取消</button>
+                        <button type="submit" class="btn-primary">确认重置</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <script src="js/dataManager.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/homepage.js"></script>
+</body>
+</html>

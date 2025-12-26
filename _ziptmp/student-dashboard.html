@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生仪表盘 - 成绩管理教学平台</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/student.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="student-dashboard">
+    <!-- 顶部导航 -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <img src="images/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+                <h1>成绩管理教学平台</h1>
+            </div>
+            <div class="nav-right">
+                <div class="user-info">
+                    <img src="images/avatar.jpg" alt="用户头像" class="user-avatar" onerror="this.src='https://picsum.photos/seed/user/40/40.jpg'">
+                    <span class="user-name" id="currentUserName">张三</span>
+                    <span class="user-type">学生</span>
+                </div>
+                <div class="nav-actions">
+                    <button class="notification-btn" id="notificationBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge hidden">0</span>
+                    </button>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        退出
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 侧边导航 -->
+        <nav class="sidebar">
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="dashboard">
+                    <a href="#dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>仪表盘</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="courses">
+                    <a href="#courses">
+                        <i class="fas fa-book"></i>
+                        <span>课程浏览</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="my-courses">
+                    <a href="#my-courses">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>我的课程</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="grades">
+                    <a href="#grades">
+                        <i class="fas fa-chart-line"></i>
+                        <span>成绩中心</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="profile">
+                    <a href="#profile">
+                        <i class="fas fa-user"></i>
+                        <span>个人信息</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 仪表盘页面 -->
+            <section id="dashboard" class="page-content active">
+                <div class="content-header">
+                    <h2>学生仪表盘</h2>
+                    <p>欢迎回来，<span id="welcomeName">张三</span>同学！</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalCourses">6</h3>
+                            <p>已选课程</p>
+                        </div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="completedCourses">3</h3>
+                            <p>已完成课程</p>
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="pendingTasks">8</h3>
+                            <p>待完成任务</p>
+                        </div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="averageGrade">85.5</h3>
+                            <p>平均成绩</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近活动 -->
+                <div class="content-section">
+                    <h3>最近活动</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4>计算机网络 - 成绩发布</h4>
+                                <p>您的期中考试成绩为88分</p>
+                                <span class="activity-time">1天前</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-book-reader"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h4>操作系统 - 课程学习</h4>
+                                <p>您完成了第5章的学习内容</p>
+                                <span class="activity-time">3天前</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </section>
+
+            <!-- 课程浏览页面 -->
+            <section id="courses" class="page-content">
+                <div class="content-header">
+                    <h2>课程浏览</h2>
+                    <p>浏览可选修的课程</p>
+                </div>
+
+                <!-- 搜索和筛选 -->
+                <div class="search-filters">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="courseSearch" placeholder="搜索课程名称、教师...">
+                        <button class="search-btn" id="searchBtn">搜索</button>
+                    </div>
+                    <div class="filter-options">
+                        <select id="departmentFilter" class="filter-select">
+                            <option value="">全部院系</option>
+                            <option value="cs">计算机学院</option>
+                            <option value="ee">电子信息学院</option>
+                            <option value="ma">数学学院</option>
+                        </select>
+                        <select id="creditFilter" class="filter-select">
+                            <option value="">全部学分</option>
+                            <option value="1">1学分</option>
+                            <option value="2">2学分</option>
+                            <option value="3">3学分</option>
+                            <option value="4">4学分</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 课程列表 -->
+                <div class="courses-grid" id="coursesList">
+                    <!-- 课程卡片将通过JS动态生成 -->
+                </div>
+            </section>
+
+            <!-- 我的课程页面 -->
+            <section id="my-courses" class="page-content">
+                <div class="content-header">
+                    <h2>我的课程</h2>
+                    <p>您已选修的课程列表</p>
+                </div>
+
+                <div class="my-courses-grid" id="myCoursesList">
+                    <!-- 我的课程将通过JS动态生成 -->
+                </div>
+            </section>
+
+            <!-- 成绩中心页面 -->
+            <section id="grades" class="page-content">
+                <div class="content-header">
+                    <h2>成绩中心</h2>
+                    <p>查看您的课程成绩和绩点</p>
+                </div>
+
+                <!-- 学期选择 -->
+                <div class="semester-selector">
+                    <select id="semesterSelect" class="form-control">
+                        <option value="2024-1">2024年春季学期</option>
+                        <option value="2023-2">2023年秋季学期</option>
+                        <option value="2023-1">2023年春季学期</option>
+                    </select>
+                </div>
+
+                <!-- 成绩总览 -->
+                <div class="grade-overview">
+                    <div class="overview-card">
+                        <h3>学期总览</h3>
+                        <div class="overview-stats">
+                            <div class="stat">
+                                <span class="label">平均绩点</span>
+                                <span class="value gpa">3.8</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">总学分</span>
+                                <span class="value">18</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">平均成绩</span>
+                                <span class="value grade">85.5</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成绩明细表 -->
+                <div class="grade-table-container">
+                    <h3>成绩明细</h3>
+                    <div class="table-responsive">
+                        <table class="grade-table">
+                            <thead>
+                                <tr>
+                                    <th>课程编号</th>
+                                    <th>课程名称</th>
+                                    <th>教师</th>
+                                    <th>学分</th>
+                                    <th>成绩</th>
+                                    <th>绩点</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradeTableBody">
+                                <!-- 成绩数据将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 个人信息页面 -->
+            <section id="profile" class="page-content">
+                <div class="content-header">
+                    <h2>个人信息</h2>
+                    <p>管理您的个人资料和账户设置</p>
+                </div>
+
+                <div class="profile-container">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="avatar-upload">
+                                <img src="images/avatar.jpg" alt="用户头像" class="profile-avatar" onerror="this.src='https://picsum.photos/seed/student/120/120.jpg'">
+                                <button class="upload-btn">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                            <h3>张三</h3>
+                            <p>计算机科学与技术 2021级</p>
+                        </div>
+
+                        <div class="profile-info">
+                            <div class="info-group">
+                                <h4>基本信息</h4>
+                                <div class="info-item">
+                                    <label>学号</label>
+                                    <span>2021001001</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>姓名</label>
+                                    <span>张三</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>性别</label>
+                                    <span>男</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>出生日期</label>
+                                    <span>2003-05-15</span>
+                                </div>
+                            </div>
+
+                            <div class="info-group">
+                                <h4>联系方式</h4>
+                                <div class="info-item">
+                                    <label>邮箱</label>
+                                    <span>zhangsan@university.edu.cn</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>电话</label>
+                                    <span>138****1234</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button class="btn-secondary">修改信息</button>
+                            <button class="btn-primary">修改密码</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 课程详情模态框 -->
+    <div id="courseDetailModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="modalCourseTitle">课程详情</h3>
+                <span class="close" id="closeCourseModal">&times;</span>
+            </div>
+            <div class="modal-body" id="modalCourseContent">
+                <!-- 课程详情内容将通过JS动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 首次登录强制修改密码 -->
+    <div id="forceChangePasswordModal" class="modal forgot-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content forgot-modal-content">
+            <div class="modal-header">
+                <h3>首次登录，请修改密码</h3>
+            </div>
+            <div class="modal-body">
+                <form id="forceChangePasswordForm">
+                    <div class="form-group">
+                        <label for="forceOldPassword">原密码</label>
+                        <input type="password" id="forceOldPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceNewPassword">新密码</label>
+                        <input type="password" id="forceNewPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceConfirmPassword">确认新密码</label>
+                        <input type="password" id="forceConfirmPassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-primary">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 消息提示 -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <script src="js/dataManager.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/student.js"></script>
+</body>
+</html>
