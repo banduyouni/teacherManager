@@ -207,13 +207,13 @@
                 <div class="content-header">
                     <h2>作业与考试管理</h2>
                     <div class="header-actions">
-                        <button class="btn-primary" id="createAssignmentBtn">
-                            <i class="fas fa-plus"></i>
-                            创建作业/考试
-                        </button>
                         <select class="form-control" id="assignmentCourseFilter">
                             <option value="">选择课程</option>
                         </select>
+                        <button class="btn-primary" id="createAssignmentBtn">
+                            <i class="fas fa-plus"></i>
+                            创建作业/考试
+                        </button>                      
                     </div>
                 </div>
 
@@ -493,6 +493,20 @@
                             <option value="practical">实践课</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>课程轮播图（可多张，支持拖拽或上下调整顺序）</label>
+                        <div class="file-upload-area small" id="courseCarouselUpload">
+                            <div class="upload-content">
+                                <i class="fas fa-images"></i>
+                                <p>点击或拖拽图片到此处</p>
+                                <span>建议宽高比 16:6，支持 jpg/png（最大5MB）</span>
+                            </div>
+                        </div>
+                        <input type="file" id="courseCarouselInput" accept="image/*" multiple style="display:none">
+                        <div class="carousel-previews" id="courseCarouselList">
+                            <!-- 轮播图预览 -->
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -553,6 +567,20 @@
                             <option value="published">已发布</option>
                             <option value="archived">已归档</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>课程轮播图（编辑）</label>
+                        <div class="file-upload-area small" id="editCourseCarouselUpload">
+                            <div class="upload-content">
+                                <i class="fas fa-images"></i>
+                                <p>点击或拖拽图片到此处</p>
+                                <span>建议宽高比 16:6，支持 jpg/png（最大5MB）</span>
+                            </div>
+                        </div>
+                        <input type="file" id="editCourseCarouselInput" accept="image/*" multiple style="display:none">
+                        <div class="carousel-previews" id="editCourseCarouselList">
+                            <!-- 编辑时轮播图预览 -->
+                        </div>
                     </div>
                 </form>
             </div>

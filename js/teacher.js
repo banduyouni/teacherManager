@@ -18,14 +18,22 @@ class TeacherDashboard {
             if (cm.files && Array.isArray(cm.files)) {
                 cm.files = cm.files.filter(fileData => {
                     // 如果是新格式的文件数据（包含blobUrl）
-                    if (typeof fileData === 'object' && fileData.blobUrl) {
-                        // 页面刷新后Blob URL会失效，直接清理
-                        try {
-                            URL.revokeObjectURL(fileData.blobUrl);
-                            hasChanges = true;
-                            return false; // 移除失效的Blob URL文件
-                        } catch (error) {
-                            return false; // 移除无法处理的Blob URL文件
+                    if (typeof fileData === 'object' && fileData.tempPath) {
+                        // 如果文件有tempPath，保留文件
+                        return true;
+                    } else if (typeof fileData === 'object' && fileData.blobUrl) {
+                        // 只有真正的Blob URL（以blob:开头）才需要清理
+                        if (fileData.blobUrl.startsWith('blob:')) {
+                            try {
+                                URL.revokeObjectURL(fileData.blobUrl);
+                                hasChanges = true;
+                                return false; // 移除失效的Blob URL文件
+                            } catch (error) {
+                                return false; // 移除无法处理的Blob URL文件
+                            }
+                        } else {
+                            // 不是真正的Blob URL，保留文件
+                            return true;
                         }
                     }
                     return true; // 保留旧格式文件
@@ -147,6 +155,22 @@ class TeacherDashboard {
             });
         }
 
+        // 快速操作 - 上传课件
+        const quickUploadMaterials = document.querySelector('[data-action="upload-materials"]');
+        if (quickUploadMaterials) {
+            quickUploadMaterials.addEventListener('click', () => {
+                this.showUploadMaterialModal();
+            });
+        }
+
+        // 快速操作 - 成绩管理
+        const quickGradeManagement = document.querySelector('[data-action="grade-management"]');
+        if (quickGradeManagement) {
+            quickGradeManagement.addEventListener('click', () => {
+                this.switchPage('grades');
+            });
+        }
+
         // 作业与考试tab切换
         const tabButtons = document.querySelectorAll('.assignments-tabs .tab-btn');
         tabButtons.forEach(btn => {
@@ -183,6 +207,42 @@ class TeacherDashboard {
         if (assignmentCourseFilter) {
             assignmentCourseFilter.addEventListener('change', (e) => {
                 this.filterAssignmentsByCourse(e.target.value);
+            });
+        }
+
+        // 成绩管理 - 选择课程查看学生与录入成绩
+        const gradeCourseFilter = document.getElementById('gradeCourseFilter');
+        if (gradeCourseFilter) {
+            // 填充课程选项
+            this.populateGradeCourseFilter(gradeCourseFilter);
+            gradeCourseFilter.addEventListener('change', (e) => {
+                this.onGradeCourseChange(e.target.value);
+            });
+        }
+
+        const gradeSetupBtn = document.getElementById('gradeSetupBtn');
+        if (gradeSetupBtn) {
+            gradeSetupBtn.addEventListener('click', () => {
+                const cid = document.getElementById('gradeCourseFilter').value;
+                if (!cid) { showMessage('请先选择课程', 'info'); return; }
+                this.openGradeSchemeEditor(cid);
+            });
+        }
+
+        const importGradesBtn = document.getElementById('importGradesBtn');
+        if (importGradesBtn) {
+            importGradesBtn.addEventListener('click', () => {
+                // 创建隐藏文件输入用于选择CSV
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.csv,text/csv';
+                fileInput.addEventListener('change', (e) => {
+                    const files = e.target.files;
+                    if (files && files[0]) this.importGradesCSV(files[0]);
+                });
+                document.body.appendChild(fileInput);
+                fileInput.click();
+                fileInput.remove();
             });
         }
 
@@ -789,6 +849,9 @@ class TeacherDashboard {
                 <button class="btn-info" onclick="teacherDashboard.manageGrades('${course.id}')">
                     <i class="fas fa-chart-bar"></i> 管理成绩
                 </button>
+                <button class="btn-warning" onclick="teacherDashboard.manageMaterials('${course.id}')">
+                    <i class="fas fa-folder-open"></i> 管理课件
+                </button>
             </div>
         `;
 
@@ -942,6 +1005,7 @@ class TeacherDashboard {
             </div>
             <div class="assignment-actions">
                 <button class="btn-primary" onclick="teacherDashboard.gradeAssignments('${assignment.id}')">批改作业/考试</button>
+                <button class="btn-info" onclick="teacherDashboard.viewAssignmentAttachments('${assignment.id}')"><i class="fas fa-paperclip"></i> 查看附件</button>
                 <button class="btn-secondary" onclick="teacherDashboard.editAssignment('${assignment.id}')">编辑</button>
                 <button class="btn-danger" onclick="teacherDashboard.deleteAssignment('${assignment.id}')">删除</button>
             </div>
@@ -1113,7 +1177,7 @@ class TeacherDashboard {
                             <i class="fas fa-file-${this.getFileIcon(file.extension)}"></i>
                             <div>
                                 <h4>${file.name}</h4>
-                                <p>文件类型: ${file.extension.toUpperCase()} | 上传时间: ${new Date(file.uploadTime).toLocaleString()}</p>
+                                <p>文件类型: <span class="file-type-badge"> ${file.extension.toUpperCase()}</span> | 文件大小: <span class="file-size-badge ${this.getFileSizeClass(file.size || 0)}">${this.formatFileSize(file.size || 0)}</span> | 上传时间: ${new Date(file.uploadTime).toLocaleString()}</p>
                             </div>
                         </div>
                         <div class="material-actions">
@@ -1135,12 +1199,19 @@ class TeacherDashboard {
         courseMaterials.forEach(cm => {
             if (cm.files && Array.isArray(cm.files)) {
                 cm.files.forEach(fileData => {
-                    // 检查是否是新格式的文件数据（包含blobUrl）
+                    // 检查是否是新格式的文件数据（包含blobUrl或tempPath）
                     if (typeof fileData === 'object' && fileData.name) {
                         // 新格式：包含完整文件信息的对象
                         const extension = fileData.name.split('.').pop().toLowerCase();
+                        
+                        // 优先使用tempPath，如果不存在则使用blobUrl
+                        let path = fileData.blobUrl;
+                        if (fileData.tempPath) {
+                            path = fileData.tempPath;
+                        }
+                        
                         filesList.push({
-                            path: fileData.blobUrl, // 使用blobUrl作为下载路径
+                            path: path, // 使用tempPath或blobUrl作为下载路径
                             name: fileData.name,
                             displayName: fileData.name.split('.').slice(0, -1).join('.'),
                             extension: extension,
@@ -1359,11 +1430,45 @@ class TeacherDashboard {
     }
 
     manageAssignments(courseId) {
-        showMessage('管理作业功能正在开发中...', 'info');
+        // 切换到作业管理页面
+        this.switchPage('assignments');
+        
+        // 设置课程筛选器为指定课程
+        setTimeout(() => {
+            const assignmentCourseFilter = document.getElementById('assignmentCourseFilter');
+            if (assignmentCourseFilter) {
+                assignmentCourseFilter.value = courseId;
+                this.filterAssignmentsByCourse(courseId);
+            }
+        }, 100);
     }
 
     manageGrades(courseId) {
-        showMessage('管理成绩功能正在开发中...', 'info');
+        // 切换到成绩管理页面
+        this.switchPage('grades');
+        
+        // 设置课程筛选器为指定课程
+        setTimeout(() => {
+            const gradeCourseFilter = document.getElementById('gradeCourseFilter');
+            if (gradeCourseFilter) {
+                gradeCourseFilter.value = courseId;
+                this.onGradeCourseChange(courseId);
+            }
+        }, 100);
+    }
+
+    manageMaterials(courseId) {
+        // 切换到课件管理页面
+        this.switchPage('materials');
+        
+        // 设置课程筛选器为指定课程
+        setTimeout(() => {
+            const materialCourseFilter = document.getElementById('materialCourseFilter');
+            if (materialCourseFilter) {
+                materialCourseFilter.value = courseId;
+                this.renderMaterials(); // 重新渲染课件列表以应用筛选
+            }
+        }, 100);
     }
 
 
@@ -1627,23 +1732,36 @@ class TeacherDashboard {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
+    // 根据文件大小获取CSS类名
+    getFileSizeClass(bytes) {
+        if (!bytes || bytes === 0) return 'size-unknown';
+        if (bytes < 1024 * 100) return 'size-small';      // 小于100KB
+        if (bytes < 1024 * 1024) return 'size-medium';     // 小于1MB
+        if (bytes < 1024 * 1024 * 10) return 'size-large'; // 小于10MB
+        return 'size-huge';                                // 大于10MB
+    }
+
     // 上传课件
-    uploadMaterials() {
-        const courseSelect = document.getElementById('materialCourse');
-        const courseId = courseSelect.value;
+    async uploadMaterials() {
+        const modal = document.getElementById('materialModal');
+        const mode = modal && modal.dataset.mode ? modal.dataset.mode : 'course';
 
-        if (!courseId) {
-            showMessage('请选择课程', 'error');
-            return;
-        }
-
-        // 获取已选择的文件
         const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
         const files = uploadedFilesContainer.selectedFiles || [];
 
-        if (files.length === 0) {
+        // 课程上传模式需要至少选择一个文件；作业模式允许保存空列表（即删除所有附件）
+        if (files.length === 0 && mode === 'course') {
             showMessage('请选择要上传的文件', 'error');
             return;
+        }
+
+        if (mode === 'course') {
+            const courseSelect = document.getElementById('materialCourse');
+            const courseId = courseSelect ? courseSelect.value : '';
+            if (!courseId) {
+                showMessage('请选择课程', 'error');
+                return;
+            }
         }
 
         // 验证文件大小
@@ -1656,55 +1774,100 @@ class TeacherDashboard {
         }
 
         try {
-            // 获取或创建课程的课件记录
-            let courseMaterial = dataManager.getData('courseMaterials').find(cm => cm.courseId === courseId);
-            
-            if (!courseMaterial) {
-                // 创建新的课件记录
-                courseMaterial = {
-                    id: dataManager.generateId(),
-                    courseId: courseId,
-                    files: [],
-                    uploadTime: new Date().toISOString()
-                };
-                dataManager.data.courseMaterials.push(courseMaterial);
+            if (mode === 'course') {
+                // 课程课件上传逻辑（保持原有行为）
+                const courseSelect = document.getElementById('materialCourse');
+                const courseId = courseSelect ? courseSelect.value : '';
+
+                // 获取或创建课程的课件记录
+                let courseMaterial = dataManager.getData('courseMaterials').find(cm => cm.courseId === courseId);
+                if (!courseMaterial) {
+                    // 创建新的课件记录
+                    courseMaterial = {
+                        id: dataManager.generateId(),
+                        courseId: courseId,
+                        files: [],
+                        uploadTime: new Date().toISOString()
+                    };
+                    dataManager.data.courseMaterials.push(courseMaterial);
+                }
+
+                // 处理文件存储（创建临时路径）
+                const fileData = [];
+                for (const file of files) {
+                    if (typeof file === 'object' && file.name && (file.tempPath || file.blobUrl)) {
+                        // 已是持久化对象，直接保留
+                        fileData.push(file);
+                        continue;
+                    }
+                    const tempPath = await dataManager.storeTempFile(file, dataManager.generateTempPath(file.name));
+                    fileData.push({
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        tempPath: tempPath,
+                        uploadTime: new Date().toISOString()
+                    });
+                }
+
+                // 更新课件记录
+                courseMaterial.files = [...courseMaterial.files, ...fileData];
+                courseMaterial.uploadTime = new Date().toISOString();
+
+                // 重新渲染课件列表
+                this.renderMaterials();
+
+                // 关闭模态框
+                this.closeUploadMaterialModal();
+
+                showMessage(`成功上传${fileData.length}个课件文件`, 'success');
+
+                // 添加操作日志
+                const course = this.coursesData.find(c => c.id === courseId);
+                dataManager.addLog(this.userData.id, 'upload_material', `上传课件到课程: ${course ? course.courseName : courseId}`);
+            } else if (mode === 'assignment') {
+                // 将选中文件保存到 assignment.files 中（覆盖/同步）
+                const assignmentId = modal.dataset.targetId;
+                const assignment = this.assignmentsData.find(a => a.id === assignmentId);
+                if (!assignment) {
+                    showMessage('未找到对应的作业', 'error');
+                    return;
+                }
+
+                const newFiles = [];
+                for (const file of files) {
+                    if (typeof file === 'object' && file.name && (file.tempPath || file.blobUrl)) {
+                        // 已持久化的文件对象，保留
+                        newFiles.push(file);
+                        continue;
+                    }
+                    // 是原生 File 对象，需要持久化
+                    const tempPath = await dataManager.storeTempFile(file, dataManager.generateTempPath(file.name));
+                    newFiles.push({
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        tempPath: tempPath,
+                        uploadTime: new Date().toISOString()
+                    });
+                }
+
+                // 将 assignment.files 替换为 newFiles（用户在 modal 中可增删，提交时同步）
+                assignment.files = newFiles;
+                assignment.updatedAt = new Date().toISOString();
+
+                // 保存 assignment
+                dataManager.updateData('assignments', assignmentId, assignment);
+
+                // 重新加载数据并渲染
+                this.loadAssignmentsData();
+                this.renderAssignments();
+
+                this.closeUploadMaterialModal();
+                showMessage('附件保存成功', 'success');
+
+                dataManager.addLog(this.userData.id, 'update_assignment_attachments', `更新作业附件: ${assignment.title}`);
             }
-
-            // 处理文件存储（创建Blob URL）
-            const fileData = [];
-            Array.from(files).forEach(file => {
-                // 创建Blob URL用于后续下载
-                const blobUrl = URL.createObjectURL(file);
-                
-                // 存储文件信息和Blob URL
-                fileData.push({
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    blobUrl: blobUrl,
-                    uploadTime: new Date().toISOString()
-                });
-            });
-
-            // 更新课件记录
-            courseMaterial.files = [...courseMaterial.files, ...fileData];
-            courseMaterial.uploadTime = new Date().toISOString();
-
-            // 保存数据
-            dataManager.saveData();
-
-            // 重新渲染课件列表
-            this.renderMaterials();
-
-            // 关闭模态框
-            this.closeUploadMaterialModal();
-
-            showMessage(`成功上传${files.length}个课件文件`, 'success');
-
-            // 添加操作日志 
-            // @Todo addLog里上传课件要将课件名加上去，注意可能添加多个课件
-            const course = this.coursesData.find(c => c.id === courseId);
-            dataManager.addLog(this.userData.id, 'upload_material', `上传课件到课程: ${course.courseName}`);
 
         } catch (error) {
             console.error('上传课件失败:', error);
@@ -1713,12 +1876,12 @@ class TeacherDashboard {
     }
 
     // 显示上传课件模态框（带文件）
-    showUploadMaterialModalWithFiles(files) {
+    showUploadMaterialModalWithFiles(files, target = null) {
         const modal = document.getElementById('materialModal');
         if (!modal) return;
 
-        // 先显示模态框
-        this.showUploadMaterialModal();
+        // 先显示模态框（支持传入 target，用于assignment）
+        this.showUploadMaterialModal(null, target);
         
         // 延迟处理文件，确保模态框已完全显示
         setTimeout(() => {
@@ -1727,9 +1890,18 @@ class TeacherDashboard {
     }
 
     // 显示上传课件模态框
-    showUploadMaterialModal(courseId = null) {
+    showUploadMaterialModal(courseId = null, target = null) {
         const modal = document.getElementById('materialModal');
         if (!modal) return;
+
+        // 标记模式（course or assignment）
+        if (target && target.type === 'assignment') {
+            modal.dataset.mode = 'assignment';
+            modal.dataset.targetId = target.id;
+        } else {
+            delete modal.dataset.mode;
+            delete modal.dataset.targetId;
+        }
 
         // 重置表单
         const form = document.getElementById('uploadMaterialForm');
@@ -1739,6 +1911,44 @@ class TeacherDashboard {
 
         // 设置课程选择器
         this.initMaterialCourseSelector(courseId);
+
+        // 如果是 assignment 模式，填充已存在的附件到列表并禁用课程选择
+        const uploadedFilesContainer = document.getElementById('materialUploadedFiles');
+        if (modal.dataset.mode === 'assignment') {
+            const assignmentId = modal.dataset.targetId;
+            const assignment = this.assignmentsData.find(a => a.id === assignmentId);
+            // 使用 assignment.files 作为已选文件列表（兼容旧格式）
+            uploadedFilesContainer.selectedFiles = assignment && Array.isArray(assignment.files) ? assignment.files.slice() : [];
+            // 将课程选择器设置为禁用
+            const courseSelect = document.getElementById('materialCourse');
+            if (courseSelect) {
+                courseSelect.value = assignment ? assignment.courseId : '';
+                courseSelect.disabled = true;
+            }
+            // 更新标题
+            const header = modal.querySelector('.modal-header h3');
+            if (header) header.textContent = '管理附件';
+        } else {
+            // 普通课程上传模式
+            uploadedFilesContainer.selectedFiles = [];
+            const courseSelect = document.getElementById('materialCourse');
+            if (courseSelect) courseSelect.disabled = false;
+            const header = modal.querySelector('.modal-header h3');
+            if (header) header.textContent = '上传课件';
+        }
+
+        // 刷新显示
+        this.refreshUploadedFilesList();
+
+        // 根据模式调整底部按钮文本（作业模式显示“保存”）
+        const confirmBtn = document.getElementById('confirmUploadMaterial');
+        if (confirmBtn) {
+            if (modal.dataset.mode === 'assignment') {
+                confirmBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-upload"></i> 上传课件';
+            }
+        }
 
         // 显示模态框
         modal.classList.add('active');
@@ -1778,24 +1988,30 @@ class TeacherDashboard {
             // 在Live Server环境下实现真实的文件下载
             showMessage(`开始下载课件: ${downloadFileName}`, 'info');
             
-            // 创建真实的下载链接
-            const downloadLink = document.createElement('a');
-            
-            // 检查是否是Blob URL（以blob:开头）
-            if (filePath.startsWith('blob:')) {
-                // 新格式：使用Blob URL
-                downloadLink.href = filePath;
-                downloadLink.download = downloadFileName;
+            // 检查是否是tempPath格式（新格式），如果是则使用dataManager下载
+            if (filePath.includes('temp_')) {
+                // 新格式：使用dataManager下载临时文件
+                dataManager.downloadTempFile(filePath);
             } else {
-                // 旧格式：使用相对路径
-                downloadLink.href = filePath;
-                downloadLink.download = downloadFileName;
+                // 创建真实的下载链接
+                const downloadLink = document.createElement('a');
+                
+                // 检查是否是Blob URL（以blob:开头）
+                if (filePath.startsWith('blob:')) {
+                    // 旧格式：使用Blob URL
+                    downloadLink.href = filePath;
+                    downloadLink.download = downloadFileName;
+                } else {
+                    // 旧格式：使用相对路径
+                    downloadLink.href = filePath;
+                    downloadLink.download = downloadFileName;
+                }
+                
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
             }
-            
-            downloadLink.style.display = 'none';
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
 
             // 添加操作日志
             dataManager.addLog(this.userData.id, 'download_material', `下载课件: ${downloadFileName} (课程: ${course.courseName})`);
@@ -1837,44 +2053,37 @@ class TeacherDashboard {
             if (fileIndex > -1) {
                 const deletedFile = courseMaterial.files[fileIndex];
                 
-                // 如果是Blob URL，释放内存
-                if (deletedFile && typeof deletedFile === 'object' && deletedFile.blobUrl) {
+                // 如果是真正的Blob URL，释放内存
+                if (deletedFile && typeof deletedFile === 'object' && deletedFile.blobUrl && deletedFile.blobUrl.startsWith('blob:')) {
                     URL.revokeObjectURL(deletedFile.blobUrl);
                 }
                 
-                courseMaterial.files.splice(fileIndex, 1);
-                
-                // 如果文件列表为空，删除整个课件记录
-                if (courseMaterial.files.length === 0) {
-                    const cmIndex = dataManager.data.courseMaterials.indexOf(courseMaterial);
-                    if (cmIndex > -1) {
-                        dataManager.data.courseMaterials.splice(cmIndex, 1);
-                    }
+                // 如果是临时文件路径，从dataManager中删除
+                if (deletedFile && typeof deletedFile === 'object' && deletedFile.tempPath) {
+                    dataManager.removeTempFile(deletedFile.tempPath);
                 }
+                
+                // 从数组中移除文件
+                courseMaterial.files.splice(fileIndex, 1);
+
+                // 保存数据
+                dataManager.saveData();
+
+                // 重新渲染课件列表
+                this.renderMaterials();
+
+                showMessage('课件删除成功', 'success');
+            } else {
+                showMessage('未找到要删除的文件', 'error');
             }
-
-            // 保存数据
-            dataManager.saveData();
-
-            // 重新渲染课件列表
-            this.renderMaterials();
-
-            showMessage('课件删除成功', 'success');
-
-            // 添加操作日志
-            const course = this.coursesData.find(c => c.id === courseId);
-           
-            dataManager.addLog(this.userData.id, 'delete_material', `删除课件文件: ${fileName} (课程: ${course.courseName})`);
-
         } catch (error) {
             console.error('删除课件失败:', error);
             showMessage('删除课件失败：' + error.message, 'error');
         }
     }
 
-    // 设置课程模态框事件监听器
+    // 设置创建课程模态框的事件监听器
     setupCourseModalListeners() {
-        // 创建课程表单提交
         const createCourseForm = document.getElementById('createCourseForm');
         if (createCourseForm) {
             createCourseForm.addEventListener('submit', (e) => {
@@ -1916,6 +2125,28 @@ class TeacherDashboard {
                 }
             });
         }
+
+        // 课程轮播图上传（创建模态）
+        const carouselUpload = document.getElementById('courseCarouselUpload');
+        const carouselInput = document.getElementById('courseCarouselInput');
+        if (carouselUpload && carouselInput) {
+            carouselUpload.addEventListener('click', () => carouselInput.click());
+            carouselUpload.addEventListener('dragover', (e) => { e.preventDefault(); carouselUpload.classList.add('dragover'); });
+            carouselUpload.addEventListener('dragleave', () => carouselUpload.classList.remove('dragover'));
+            carouselUpload.addEventListener('drop', (e) => { e.preventDefault(); carouselUpload.classList.remove('dragover'); this.handleCoursePicSelection(e.dataTransfer.files, 'create'); });
+            carouselInput.addEventListener('change', (e) => this.handleCoursePicSelection(e.target.files, 'create'));
+        }
+
+        // 课程轮播图上传（编辑模态）
+        const editCarouselUpload = document.getElementById('editCourseCarouselUpload');
+        const editCarouselInput = document.getElementById('editCourseCarouselInput');
+        if (editCarouselUpload && editCarouselInput) {
+            editCarouselUpload.addEventListener('click', () => editCarouselInput.click());
+            editCarouselUpload.addEventListener('dragover', (e) => { e.preventDefault(); editCarouselUpload.classList.add('dragover'); });
+            editCarouselUpload.addEventListener('dragleave', () => editCarouselUpload.classList.remove('dragover'));
+            editCarouselUpload.addEventListener('drop', (e) => { e.preventDefault(); editCarouselUpload.classList.remove('dragover'); this.handleCoursePicSelection(e.dataTransfer.files, 'edit'); });
+            editCarouselInput.addEventListener('change', (e) => this.handleCoursePicSelection(e.target.files, 'edit'));
+        }
     }
 
     // 显示创建课程模态框
@@ -1937,6 +2168,176 @@ class TeacherDashboard {
             modal.querySelector('.modal-content').style.transform = 'scale(1)';
             modal.querySelector('.modal-content').style.opacity = '1';
         }, 10);
+
+        // 初始化轮播图上传展示
+        this.initCourseCarousel('create');
+    }
+
+    // 初始化或刷新创建/编辑课程的轮播图上传区域
+    initCourseCarousel(mode = 'create', courseId = null) {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container) return;
+
+        // 初始化 selectedFiles 存储
+        container.selectedFiles = container.selectedFiles || [];
+
+        // 如果是 edit 模式且有 courseId，从 dataManager 加载已保存的 coursePics
+        if (mode === 'edit' && courseId) {
+            const picEntry = dataManager.getData('coursePics').find(p => p.courseId === courseId);
+            if (picEntry && Array.isArray(picEntry.images)) {
+                // 将图片对象转换为统一结构
+                container.selectedFiles = picEntry.images.map(img => ({
+                    name: img.name || img.tempPath || img.url || 'img',
+                    tempPath: img.tempPath || img.url || null,
+                    order: img.order || 0,
+                    uploadTime: img.uploadTime || new Date().toISOString()
+                }));
+                // 按 order 排序
+                container.selectedFiles.sort((a,b) => (a.order||0) - (b.order||0));
+            } else {
+                container.selectedFiles = [];
+            }
+        } else {
+            // create 模式，清空
+            container.selectedFiles = [];
+        }
+
+        this.refreshCourseCarouselList(mode);
+    }
+
+    // 处理课程轮播图选择
+    handleCoursePicSelection(files, mode = 'create') {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container) return;
+
+        const existing = container.selectedFiles || [];
+        const newFiles = Array.from(files).slice(0, 10); // 限制最多10张
+        // 合并
+        container.selectedFiles = [...existing, ...newFiles];
+
+        this.refreshCourseCarouselList(mode);
+    }
+
+    // 刷新轮播图预览列表
+    refreshCourseCarouselList(mode='create') {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container) return;
+
+        const files = container.selectedFiles || [];
+        container.innerHTML = '';
+
+        files.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'carousel-item';
+            const name = file.name || (file.tempPath ? file.tempPath.split('/').pop() : '图片');
+
+            // thumbnail
+            const thumb = document.createElement('div');
+            thumb.className = 'carousel-thumb';
+            // 如果是 tempPath，使用 dataManager.getTempFile to get data URL
+            if (file.tempPath) {
+                const info = dataManager.getTempFile(file.tempPath);
+                if (info && info.data) {
+                    thumb.style.backgroundImage = `url(${info.data})`;
+                }
+            } else if (file.data) {
+                thumb.style.backgroundImage = `url(${file.data})`;
+            } else if (file instanceof File) {
+                // create object URL
+                const url = URL.createObjectURL(file);
+                thumb.style.backgroundImage = `url(${url})`;
+                // mark for revocation later
+                file.__objectUrl = url;
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'carousel-meta';
+            meta.innerHTML = `<div class="carousel-name">${name}</div>
+                              <div class="carousel-actions">
+                                <button class="btn-sm btn-secondary" onclick="teacherDashboard.moveCoursePicUp(${index}, '${mode}')">上移</button>
+                                <button class="btn-sm btn-secondary" onclick="teacherDashboard.moveCoursePicDown(${index}, '${mode}')">下移</button>
+                                <button class="btn-sm btn-danger" onclick="teacherDashboard.removeCoursePic(${index}, '${mode}')">删除</button>
+                              </div>`;
+
+            item.appendChild(thumb);
+            item.appendChild(meta);
+            container.appendChild(item);
+        });
+    }
+
+    moveCoursePicUp(index, mode='create') {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container || !container.selectedFiles) return;
+        if (index <= 0) return;
+        const arr = container.selectedFiles;
+        [arr[index-1], arr[index]] = [arr[index], arr[index-1]];
+        this.refreshCourseCarouselList(mode);
+    }
+
+    moveCoursePicDown(index, mode='create') {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container || !container.selectedFiles) return;
+        const arr = container.selectedFiles;
+        if (index >= arr.length - 1) return;
+        [arr[index+1], arr[index]] = [arr[index], arr[index+1]];
+        this.refreshCourseCarouselList(mode);
+    }
+
+    removeCoursePic(index, mode='create') {
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container || !container.selectedFiles) return;
+        const arr = container.selectedFiles;
+        const removed = arr.splice(index, 1);
+        // revoke objectUrl if any
+        if (removed && removed[0] && removed[0].__objectUrl) {
+            try { URL.revokeObjectURL(removed[0].__objectUrl); } catch(e){}
+        }
+        this.refreshCourseCarouselList(mode);
+    }
+
+    // 保存轮播图到 dataManager.data.coursePics，mode 用于区分 create/edit
+    async saveCoursePics(courseId, mode='create') {
+        if (!courseId) return;
+        const listId = mode === 'edit' ? 'editCourseCarouselList' : 'courseCarouselList';
+        const container = document.getElementById(listId);
+        if (!container) return;
+        const files = container.selectedFiles || [];
+
+        const images = [];
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            if (f.tempPath) {
+                images.push({ name: f.name, tempPath: f.tempPath, order: i, uploadTime: f.uploadTime || new Date().toISOString() });
+                continue;
+            }
+            if (f instanceof File) {
+                const tempPath = await dataManager.storeTempFile(f, dataManager.generateTempPath(f.name));
+                images.push({ name: f.name, tempPath: tempPath, order: i, uploadTime: new Date().toISOString() });
+                continue;
+            }
+            // 如果是 data URL object
+            if (f.data) {
+                const tempPath = dataManager.generateTempPath(f.name || `pic_${Date.now()}.png`);
+                dataManager.storeTempFileData(tempPath, f.data, f.name || tempPath);
+                images.push({ name: f.name || tempPath, tempPath: tempPath, order: i, uploadTime: f.uploadTime || new Date().toISOString() });
+            }
+        }
+
+        // 保存到 dataManager.data.coursePics
+        let picEntry = dataManager.getData('coursePics').find(p => p.courseId === courseId);
+        if (!picEntry) {
+            picEntry = { id: dataManager.generateId(), courseId: courseId, images: images };
+            dataManager.data.coursePics.push(picEntry);
+        } else {
+            picEntry.images = images;
+        }
+        dataManager.saveData();
     }
 
     // 关闭创建课程模态框
@@ -1954,7 +2355,7 @@ class TeacherDashboard {
     }
 
     // 保存课程草稿
-    saveCourseDraft() {
+    async saveCourseDraft() {
         const courseData = this.getFormData();
         if (!this.validateCourseData(courseData, false)) {
             return;
@@ -1968,6 +2369,8 @@ class TeacherDashboard {
         const courseId = this.addCourseToSystem(courseData);
         
         if (courseId) {
+            // 先保存轮播图，再关闭模态框
+            await this.saveCoursePics(courseId, 'create');
             showMessage('课程草稿保存成功！', 'success');
             this.closeCreateCourseModal();
             this.loadTeacherData(); // 重新加载数据
@@ -1978,7 +2381,7 @@ class TeacherDashboard {
     }
 
     // 发布课程
-    publishCourse() {
+    async publishCourse() {
         const courseData = this.getFormData();
         if (!this.validateCourseData(courseData, false)) {
             return;
@@ -2007,6 +2410,8 @@ class TeacherDashboard {
         const courseId = this.addCourseToSystem(courseData);
         
         if (courseId) {
+            // 先保存轮播图
+            await this.saveCoursePics(courseId, 'create');
             showMessage('课程发布成功！学生现在可以选课了', 'success');
             this.closeCreateCourseModal();
             this.loadTeacherData(); // 重新加载数据
@@ -2268,6 +2673,9 @@ class TeacherDashboard {
             modal.querySelector('.modal-content').style.transform = 'scale(1)';
             modal.querySelector('.modal-content').style.opacity = '1';
         }, 10);
+
+        // 初始化轮播图上传展示（编辑模式）
+        this.initCourseCarousel('edit', course.id);
     }
 
     // 关闭编辑课程模态框
@@ -2285,7 +2693,7 @@ class TeacherDashboard {
     }
 
     // 更新课程
-    updateCourse() {
+    async updateCourse() {
         const form = document.getElementById('editCourseForm');
         if (!form) return;
 
@@ -2325,6 +2733,9 @@ class TeacherDashboard {
             // 保存数据
             dataManager.saveData();
             
+            // 保存轮播图（edit 模式），等待完成
+            await this.saveCoursePics(courseId, 'edit');
+
             // 重新加载数据并渲染
             this.loadTeacherData();
             this.renderCourses();
@@ -2816,7 +3227,7 @@ class TeacherDashboard {
                     <span>${fileSize} MB</span>
                 </div>
             </div>
-            <button type="button" class="file-remove" onclick="teacherDashboard.removeUploadedFile(this, '${file.name}')">
+            <button type="button" class="file-remove" onclick="teacherDashboard.removeAssignmentUploadedFile(this, '${file.name}')">
                 <i class="fas fa-times"></i>
             </button>
         `;
@@ -2824,16 +3235,16 @@ class TeacherDashboard {
         uploadedFiles.appendChild(fileItem);
     }
 
-    // 移除已上传文件
-    removeUploadedFile(button, fileName) {
+    // 移除已上传的作业文件（编辑/创建作业使用）
+    removeAssignmentUploadedFile(button, fileName) {
         const fileItem = button.closest('.file-item');
-        fileItem.remove();
-        
-        this.currentFiles = this.currentFiles.filter(file => file.name !== fileName);
+        if (fileItem) fileItem.remove();
+
+        this.currentFiles = (this.currentFiles || []).filter(file => file.name !== fileName);
     }
 
     // 创建作业
-    createAssignment() {
+    async createAssignment() {
         const form = document.getElementById('createAssignmentForm');
         if (!form) return;
 
@@ -2852,7 +3263,7 @@ class TeacherDashboard {
             lateSubmission: formData.get('assignmentLateSubmission'),
             allowPeerReview: formData.get('assignmentVisibility') === 'yes',
             teacherId: this.userData.id,
-            files: this.currentFiles || [],
+            files: [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -2863,11 +3274,30 @@ class TeacherDashboard {
         }
 
         try {
+            // 如果有文件，需要持久化到临时路径并保存元数据
+            const filesToSave = [];
+            const currentFiles = this.currentFiles || [];
+            for (const file of currentFiles) {
+                if (typeof file === 'object' && file.name && (file.tempPath || file.blobUrl)) {
+                    filesToSave.push(file);
+                    continue;
+                }
+                const tempPath = await dataManager.storeTempFile(file, dataManager.generateTempPath(file.name));
+                filesToSave.push({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    tempPath: tempPath,
+                    uploadTime: new Date().toISOString()
+                });
+            }
+
             // 生成作业ID
             const assignmentId = dataManager.generateId();
             const assignment = {
                 id: assignmentId,
-                ...assignmentData
+                ...assignmentData,
+                files: filesToSave
             };
 
             // 保存到数据管理器
@@ -2958,6 +3388,8 @@ class TeacherDashboard {
             type: formData.get('editAssignmentType'),
             allowLateSubmission: formData.get('editAssignmentLateSubmission'),
             allowPeerReview: formData.get('editAssignmentVisibility') === 'yes',
+            // 保留附件
+            files: originalAssignment.files || [],
             // 保留原始数据的关键字段
             id: originalAssignment.id,
             teacherId: originalAssignment.teacherId,
@@ -3410,8 +3842,26 @@ class TeacherDashboard {
         submissions = submissions.map(submission => {
             const student = students.find(s => s.id === submission.studentId);
             const classInfo = student ? dataManager.getData('classes').find(c => c.id === student.classId) : null;
+            // 规范化 files 结构为 [{name, tempPath?, blobUrl?, size?, type?, uploadTime?}, ...]
+            const normalizedFiles = Array.isArray(submission.files) ? submission.files.map(f => {
+                if (!f) return null;
+                if (typeof f === 'string') {
+                    return { name: f, blobUrl: f };
+                }
+                // 如果已有 tempPath 或 blobUrl，则保持字段并确保 name 存在
+                const name = f.name || f.filename || (f.tempPath ? f.tempPath.split('/').pop() : (f.blobUrl ? f.blobUrl.split('/').pop() : 'file'));
+                return {
+                    name: name,
+                    tempPath: f.tempPath,
+                    blobUrl: f.blobUrl,
+                    size: f.size,
+                    type: f.type,
+                    uploadTime: f.uploadTime || f.uploadedAt || null
+                };
+            }).filter(Boolean) : [];
             return {
                 ...submission,
+                files: normalizedFiles,
                 studentName: student ? student.name : '未知学生',
                 studentId: student ? student.username : '未知ID',
                 className: classInfo ? classInfo.className : '未知班级'
@@ -3606,6 +4056,18 @@ class TeacherDashboard {
         `);
     }
 
+    // 查看/管理作业附件（复用课件上传模态框）
+    viewAssignmentAttachments(assignmentId) {
+        const assignment = this.assignmentsData.find(a => a.id === assignmentId);
+        if (!assignment) {
+            showMessage('作业不存在', 'error');
+            return;
+        }
+
+        // 打开模态框并传入 target
+        this.showUploadMaterialModal(null, { type: 'assignment', id: assignmentId });
+    }
+
     showAddAssignmentModal() {
         this.showCreateAssignmentModal();
     }
@@ -3719,12 +4181,33 @@ class TeacherDashboard {
                         <div class="submission-files">
                             <h6>提交文件</h6>
                             <div class="file-list">
-                                ${submission.files.map(file => `
-                                    <span class="file-tag">
-                                        <i class="fas fa-paperclip"></i>
-                                        ${file}
-                                    </span>
-                                `).join('')}
+                                ${submission.files.map(file => {
+                                    const fileName = file && file.name ? file.name : (typeof file === 'string' ? file : 'file');
+                                    if (file && file.tempPath) {
+                                        return `
+                                        <a class="file-tag file-download" href="#" onclick="event.preventDefault(); dataManager.downloadTempFile('${file.tempPath}')" title="下载 ${fileName}">
+                                            <i class="fas fa-paperclip"></i>
+                                            ${fileName}
+                                        </a>
+                                    `;
+                                    }
+                                    if (file && file.blobUrl) {
+                                        // 如果是相对链接或可直接访问的资源，提供直接下载链接
+                                        return `
+                                        <a class="file-tag" href="${file.blobUrl}" target="_blank" download="${fileName}" title="下载 ${fileName}">
+                                            <i class="fas fa-paperclip"></i>
+                                            ${fileName}
+                                        </a>
+                                    `;
+                                    }
+                                    // 兜底显示不可下载的文件名
+                                    return `
+                                        <span class="file-tag">
+                                            <i class="fas fa-paperclip"></i>
+                                            ${fileName}
+                                        </span>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     ` : ''}
@@ -4124,6 +4607,318 @@ class TeacherDashboard {
     getStudentClassName(classId) {
         const classInfo = dataManager.getData('classes').find(c => c.id === classId);
         return classInfo ? classInfo.className : '';
+    }
+
+    // ================= 成绩管理相关 =================
+    // 填充成绩页面的课程选择器（仅限当前教师的课程）
+    populateGradeCourseFilter(selectElem) {
+        if (!selectElem) return;
+        selectElem.innerHTML = '<option value="">选择课程</option>';
+        this.coursesData.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.courseName} (${c.courseCode})`;
+            selectElem.appendChild(opt);
+        });
+    }
+
+    // 课程切换处理，加载学生与已保存成绩
+    onGradeCourseChange(courseId) {
+        const gradeStructureContainer = document.getElementById('gradeStructure');
+        const gradeTableBody = document.getElementById('gradeTableBody');
+        if (!gradeStructureContainer || !gradeTableBody) return;
+
+        if (!courseId) {
+            gradeStructureContainer.innerHTML = '';
+            gradeTableBody.innerHTML = '';
+            return;
+        }
+
+        // 获取课程对象与其 grading components（存储在 dataManager.data.courseGradeComponents）
+        const course = this.coursesData.find(c => c.id === courseId);
+        const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
+        const scheme = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components.map(c => ({...c, weight: c.weight * 100})) : [
+            { id: 'c1', name: '平时', weight: 0.3 },
+            { id: 'c2', name: '期中', weight: 0.3 },
+            { id: 'c3', name: '期末', weight: 0.4 }
+        ];
+
+        // 渲染构成简介与编辑入口
+        gradeStructureContainer.innerHTML = `
+            <div class="grade-structure-header">
+                <strong>成绩构成：</strong>
+                <span>${scheme.map(s => `${s.name}(${Math.round(s.weight)}%)`).join('，')}</span>
+                <button class="btn-secondary small" id="editGradeSchemeBtn">编辑构成</button>
+                <button class="btn-primary small" id="saveCourseGradesBtn">保存所有</button>
+            </div>
+        `;
+
+        document.getElementById('editGradeSchemeBtn').addEventListener('click', () => this.openGradeSchemeEditor(courseId));
+        document.getElementById('saveCourseGradesBtn').addEventListener('click', () => this.saveAllCourseGrades(courseId));
+
+        // 渲染学生成绩表头和行
+        this.renderGradeTable(courseId, scheme);
+    }
+
+    // 打开/渲染成绩构成编辑器（内联）
+    openGradeSchemeEditor(courseId) {
+        const course = this.coursesData.find(c => c.id === courseId);
+        if (!course) return;
+        const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
+        const scheme = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components.map(c => ({...c, weight: c.weight * 100})) : [
+            { id: 'c1', name: '平时', weight: 0.3 },
+            { id: 'c2', name: '期中', weight: 0.3 },
+            { id: 'c3', name: '期末', weight: 0.4 }
+        ];
+
+        const container = document.getElementById('gradeStructure');
+        container.innerHTML = `
+            <div class="grade-scheme-editor">
+                <h3>编辑成绩构成</h3>
+                <div class="scheme-list" id="schemeList"></div>
+                <div class="scheme-actions">
+                    <button class="btn-secondary" id="addSchemeItem">添加项</button>
+                    <button class="btn-primary" id="saveSchemeBtn">保存构成</button>
+                    <button class="btn-secondary" id="cancelSchemeBtn">取消</button>
+                </div>
+            </div>
+        `;
+
+        const schemeList = document.getElementById('schemeList');
+        // 记录被移除的组件 id，用于保存时提示是否同步删除 grades
+        const removedComponentIds = [];
+        function renderScheme() {
+            schemeList.innerHTML = scheme.map((s, idx) => `
+                <div class="scheme-item" data-idx="${idx}">
+                    <input class="scheme-name" value="${s.name}" placeholder="名称">
+                    <input class="scheme-weight" type="number" value="${Math.round(s.weight)}" min="0" max="100"> %
+                    <button class="btn-danger btn-remove-scheme">删除</button>
+                </div>
+            `).join('');
+            schemeList.querySelectorAll('.btn-remove-scheme').forEach((btn, i) => {
+                btn.addEventListener('click', () => {
+                    const comp = scheme[i];
+                    const confirmMsg = `是否删除构成项 “${comp.name}”？\n\n可选择是否同时从已保存的成绩记录中移除此项对应的分数。`;
+                    if (!confirm(confirmMsg)) return;
+                    // 标记要移除的组件 id（如果存在），并从数组中移除
+                    if (comp && comp.id) removedComponentIds.push(comp.id);
+                    scheme.splice(i,1);
+                    renderScheme();
+                });
+            });
+        }
+        renderScheme();
+
+        document.getElementById('addSchemeItem').addEventListener('click', () => { scheme.push({ id: 'c' + Date.now(), name: '新项', weight: 0 }); renderScheme(); });
+        document.getElementById('cancelSchemeBtn').addEventListener('click', () => this.onGradeCourseChange(courseId));
+        document.getElementById('saveSchemeBtn').addEventListener('click', () => {
+            // 收集并保存，保留已有 id（若存在）以保持与 grades 的映射
+            const items = Array.from(schemeList.querySelectorAll('.scheme-item')).map((div, idx) => {
+                const name = div.querySelector('.scheme-name').value.trim() || '未命名';
+                const weight = parseFloat(div.querySelector('.scheme-weight').value) || 0;
+                // 尝试复用原 id
+                const original = scheme[idx] && scheme[idx].id ? scheme[idx].id : ('c' + Math.random().toString(36).slice(2,8));
+                return { id: original, name, weight: weight / 100 }; // 存储时除以100
+            });
+            // 简单验证权重和为100的提示（不强制）
+            const total = items.reduce((s, it) => s + it.weight * 100, 0); // 将存储的小数值转换为百分比进行验证
+            if (Math.round(total) !== 100) {
+                if (!confirm(`当前权重总和为 ${Math.round(total)}%。建议总和为100%。仍然保存吗？`)) return;
+            }
+            // 保存到 dataManager.data.courseGradeComponents（每门课程一条记录）
+            let cgIdx = dataManager.data.courseGradeComponents.findIndex(p => p.courseId === courseId);
+            if (cgIdx === -1) {
+                dataManager.data.courseGradeComponents.push({ courseId: courseId, components: items });
+            } else {
+                dataManager.data.courseGradeComponents[cgIdx].components = items;
+            }
+
+            // 如果有被移除的组件 id，询问是否从已有 grades 中删除对应的组件分数并重算总分
+            if (removedComponentIds.length > 0) {
+                const shouldRemove = confirm('您删除了构成项，是否同时从已保存的成绩记录中移除这些构成项对应的分数并重算总分？\n选择“确定”将修改并保存成绩记录。');
+                if (shouldRemove) {
+                    const grades = dataManager.data.grades || [];
+                    grades.forEach(g => {
+                        if (g.courseId !== courseId) return;
+                        // 过滤掉被删除的组件分数
+                        if (Array.isArray(g.componentScores)) {
+                            g.componentScores = g.componentScores.filter(cs => !removedComponentIds.includes(cs.id));
+                        }
+                        // 重新计算 totalScore 按新的 items 权重
+                        const compMap = (g.componentScores || []).reduce((acc, cs) => { acc[cs.id] = cs.score; return acc; }, {});
+                        let newTotal = 0;
+                        items.forEach(comp => {
+                            const sc = compMap[comp.id] != null ? parseFloat(compMap[comp.id]) : 0;
+                            newTotal += sc * (comp.weight || 0); // comp.weight已经是小数形式，直接使用
+                        });
+                        g.totalScore = Math.round(newTotal*100)/100;
+                        g.updatedAt = new Date().toISOString();
+                    });
+                }
+            }
+
+            dataManager.saveData();
+            // 刷新本地缓存并UI
+            this.loadTeacherData();
+            this.onGradeCourseChange(courseId);
+            showMessage('成绩构成已保存', 'success');
+        });
+    }
+
+    // 渲染成绩输入表格
+    renderGradeTable(courseId, scheme) {
+        const gradeTableBody = document.getElementById('gradeTableBody');
+        if (!gradeTableBody) return;
+
+        // 动态生成表头
+        const table = document.querySelector('.grade-input-table');
+        if (table) {
+            const thead = table.querySelector('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>学号</th>
+                    <th>姓名</th>
+                    ${scheme.map(s => `<th>${s.name}</th>`).join('')}
+                    <th>总评成绩</th>
+                    <th>操作</th>
+                </tr>
+            `;
+        }
+
+        // 获取报名该课程的学生（active enrollments）
+        const enrollments = dataManager.getData('enrollments').filter(e => e.courseId === courseId && e.status === 'active');
+        const users = dataManager.getData('users');
+        const students = enrollments.map(en => users.find(u => u.id === en.studentId)).filter(Boolean);
+
+        // 表头由HTML静态定义，这里只渲染行
+        gradeTableBody.innerHTML = students.map(student => {
+            // 查找已有成绩记录
+            const existing = dataManager.getData('grades').find(g => g.courseId === courseId && g.studentId === student.id);
+            const compMap = existing && existing.componentScores ? existing.componentScores.reduce((acc,cs)=>{acc[cs.id]=cs.score;return acc;},{}) : {};
+            const inputs = scheme.map(s => {
+                const val = compMap[s.id] != null ? compMap[s.id] : '';
+                return `<td><input type="number" class="grade-input" data-student="${student.id}" data-comp="${s.id}" value="${val}" min="0" max="100"></td>`;
+            }).join('');
+            const total = existing ? (existing.totalScore || 0) : 0;
+            return `
+                <tr data-student-id="${student.id}">
+                    <td>${student.username || student.id}</td>
+                    <td>${student.name}</td>
+                    ${inputs}
+                    <td class="total-score">${total}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // 当输入变更时自动更新行总分显示
+        gradeTableBody.querySelectorAll('.grade-input').forEach(input => {
+            input.addEventListener('input', () => {
+                const sid = input.dataset.student;
+                const row = gradeTableBody.querySelector(`tr[data-student-id="${sid}"]`);
+                if (!row) return;
+                const comps = Array.from(gradeTableBody.querySelectorAll(`.grade-input[data-student="${sid}"]`));
+                // 计算总分按权重
+                const scores = comps.map(i => ({ id: i.dataset.comp, score: parseFloat(i.value) || 0 }));
+                const total = scores.reduce((sum, sc) => {
+                    const comp = scheme.find(s => s.id === sc.id);
+                    const w = comp ? comp.weight / 100 : 0; // 将显示的百分比转换为小数进行计算
+                    return sum + (sc.score * w);
+                }, 0);
+                row.querySelector('.total-score').textContent = Math.round(total*100)/100;
+            });
+        });
+    }
+
+    // 保存课程下所有学生的成绩（从表格读取并写入 localStorage）
+    saveAllCourseGrades(courseId) {
+        const gradeTableBody = document.getElementById('gradeTableBody');
+        if (!gradeTableBody) return;
+        const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
+        const scheme = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components.map(c => ({...c, weight: c.weight * 100})) : [];
+        const rows = Array.from(gradeTableBody.querySelectorAll('tr'));
+        let saved = 0;
+        rows.forEach(row => {
+            const studentId = row.dataset.studentId;
+            if (!studentId) return;
+            const inputs = Array.from(row.querySelectorAll('.grade-input'));
+            const componentScores = inputs.map(i=>({ id: i.dataset.comp, score: parseFloat(i.value) || 0 }));
+            const total = componentScores.reduce((sum, sc) => {
+                const comp = scheme.find(s => s.id === sc.id);
+                const w = comp ? comp.weight / 100 : 0; // 将显示的百分比转换为小数进行计算
+                return sum + (sc.score * w);
+            }, 0);
+
+            // 查找或创建 grade 记录
+            let grade = dataManager.getData('grades').find(g => g.courseId === courseId && g.studentId === studentId);
+            if (!grade) {
+                grade = { id: dataManager.generateId(), courseId: courseId, studentId: studentId, componentScores: componentScores, totalScore: Math.round(total*100)/100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                dataManager.data.grades.push(grade);
+            } else {
+                grade.componentScores = componentScores;
+                grade.totalScore = Math.round(total*100)/100;
+                grade.updatedAt = new Date().toISOString();
+                dataManager.updateData('grades', grade.id, grade);
+            }
+            saved++;
+        });
+        dataManager.saveData();
+        showMessage(`已保存 ${saved} 条成绩记录`, 'success');
+    }
+
+    // 导入CSV（简单实现：首列为学号/学号或studentId，后续列对应构成或直接总分）
+    importGradesCSV(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+            if (lines.length < 2) { showMessage('CSV 文件内容不足', 'error'); return; }
+            const headers = lines[0].split(',').map(h=>h.trim());
+            const rows = lines.slice(1).map(l=>l.split(',').map(c=>c.trim()));
+            const courseId = document.getElementById('gradeCourseFilter').value;
+            if (!courseId) { showMessage('请先选择课程', 'info'); return; }
+            const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
+            const scheme = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components.map(c => ({...c, weight: c.weight * 100})) : [];
+
+            rows.forEach(cols=>{
+                const studentKey = cols[0];
+                const student = dataManager.getData('users').find(u=>u.username===studentKey || u.id===studentKey);
+                if (!student) return;
+                // 如果只有两列且第二列为总分，则保存为 totalScore
+                if (cols.length === 2 && scheme.length === 0) {
+                    const total = parseFloat(cols[1]) || 0;
+                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && g.studentId===student.id);
+                    if (!grade) {
+                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, componentScores: [], totalScore: total, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                        dataManager.data.grades.push(grade);
+                    } else {
+                        grade.totalScore = total; dataManager.updateData('grades', grade.id, grade);
+                    }
+                } else {
+                    // 按组件列顺序映射
+                    const componentScores = [];
+                    for (let i=0;i<scheme.length;i++) {
+                        const val = parseFloat(cols[i+1]) || 0;
+                        componentScores.push({ id: scheme[i].id, score: val });
+                    }
+                    const total = componentScores.reduce((sum, sc) => {
+                        const comp = scheme.find(s=>s.id===sc.id);
+                        return sum + (sc.score * (comp?comp.weight/100:0)); // 将存储的小数值转换为百分比进行计算
+                    }, 0);
+                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && g.studentId===student.id);
+                    if (!grade) {
+                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, componentScores, totalScore: Math.round(total*100)/100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                        dataManager.data.grades.push(grade);
+                    } else {
+                        grade.componentScores = componentScores; grade.totalScore = Math.round(total*100)/100; dataManager.updateData('grades', grade.id, grade);
+                    }
+                }
+            });
+            dataManager.saveData();
+            // 刷新表格
+            this.onGradeCourseChange(courseId);
+            showMessage('CSV 导入完成', 'success');
+        };
+        reader.readAsText(file, 'utf-8');
     }
 }
 

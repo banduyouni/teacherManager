@@ -578,6 +578,7 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course001',
                     maxScore: 100,
+                    files: [],
                     startTime: '2024-02-01T00:00:00Z',
                     endTime: '2024-02-15T23:59:59Z',
                     createdAt: '2024-01-28T10:00:00Z',
@@ -590,6 +591,7 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course001',
                     maxScore: 100,
+                    files: [],
                     startTime: '2024-02-16T00:00:00Z',
                     endTime: '2024-03-01T23:59:59Z',
                     createdAt: '2024-02-10T14:30:00Z',
@@ -602,6 +604,7 @@ class DataManager {
                     type: 'exam',
                     courseId: 'course001',
                     maxScore: 150,
+                    files: [],
                     startTime: '2024-03-15T09:00:00Z',
                     endTime: '2024-03-15T11:30:00Z',
                     createdAt: '2024-02-20T16:00:00Z',
@@ -614,6 +617,7 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course002',
                     maxScore: 100,
+                    files: [],
                     startTime: '2024-02-05T00:00:00Z',
                     endTime: '2024-02-20T23:59:59Z',
                     createdAt: '2024-02-01T11:00:00Z',
@@ -626,6 +630,7 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course004',
                     maxScore: 100,
+                    files: [],
                     startTime: '2024-02-10T00:00:00Z',
                     endTime: '2024-02-25T23:59:59Z',
                     createdAt: '2024-02-05T15:30:00Z',
@@ -639,7 +644,11 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2025-02-12T14:30:00Z',
                     content: '线性表作业完成，包含完整的代码和测试用例。',
-                    files: ['linkedlist.cpp', 'testlist.cpp', 'README.md'],
+                    files: [
+                        {blobUrl: 'linkedlist.cpp', name: 'linkedlist.cpp', size: 1024},
+                        {blobUrl: 'testlist.cpp', name: 'testlist.cpp', size: 2048},
+                        {blobUrl: 'README.md', name: 'README.md', size: 512}
+                    ],
                     status: 'graded',
                     score: 92,
                     feedback: '代码结构清晰，逻辑正确，测试用例完善。',
@@ -651,7 +660,10 @@ class DataManager {
                     studentId: 's002',
                     submittedTime: '2024-02-13T16:45:00Z',
                     content: '完成了顺序表和链表的实现，代码运行正常。',
-                    files: ['seqlist.c', 'linkedlist.c'],
+                    files: [
+                        {blobUrl: 'seqlist.c', name: 'seqlist.c', size: 1536},
+                        {blobUrl: 'linkedlist.c', name: 'linkedlist.c', size: 2560}
+                    ],
                     status: 'graded',
                     score: 85,
                     feedback: '实现基本正确，建议优化代码注释和错误处理。',
@@ -663,7 +675,10 @@ class DataManager {
                     studentId: 's003',
                     submittedTime: '2024-02-14T20:15:00Z',
                     content: '线性表作业实现，包含所有要求的功能。',
-                    files: ['list.cpp', 'main.cpp'],
+                    files: [
+                        {blobUrl: 'list.cpp', name: 'list.cpp', size: 1792},
+                        {blobUrl: 'main.cpp', name: 'main.cpp', size: 1024}
+                    ],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -675,7 +690,10 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2024-02-25T18:20:00Z',
                     content: '二叉树遍历实现完成，包含递归和非递归版本。',
-                    files: ['tree.cpp', 'traversal.cpp'],
+                    files: [
+                        {blobUrl: 'tree.cpp', name: 'tree.cpp', size: 2304},
+                        {blobUrl: 'traversal.cpp', name: 'traversal.cpp', size: 1280}
+                    ],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -687,7 +705,11 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2024-02-18T22:30:00Z',
                     content: 'Socket编程作业，实现了客户端服务器聊天程序。',
-                    files: ['client.c', 'server.c', 'protocol.h'],
+                    files: [
+                        {blobUrl: 'client.c', name: 'client.c', size: 2048},
+                        {blobUrl: 'server.c', name: 'server.c', size: 3072},
+                        {blobUrl: 'protocol.h', name: 'protocol.h', size: 512}
+                    ],
                     status: 'graded',
                     score: 88,
                     feedback: '功能实现完整，网络协议设计合理。',
@@ -699,7 +721,11 @@ class DataManager {
                     studentId: 's002',
                     submittedTime: '2024-02-26T19:45:00Z',
                     content: '二叉树遍历作业，完成了所有要求的遍历方式。',
-                    files: ['binarytree.cpp', 'traversal.cpp', 'test.cpp'],
+                    files: [
+                        {blobUrl: 'binarytree.cpp', name: 'binarytree.cpp', size: 2560},
+                        {blobUrl: 'traversal.cpp', name: 'traversal.cpp', size: 1536},
+                        {blobUrl: 'test.cpp', name: 'test.cpp', size: 1024}
+                    ],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -711,7 +737,10 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2024-03-15T11:00:00Z',
                     content: '期中考试答卷，完成了所有题目。',
-                    files: ['exam.pdf', 'answers.pdf'],
+                    files: [
+                        {blobUrl: 'exam.pdf', name: 'exam.pdf', size: 5120},
+                        {blobUrl: 'answers.pdf', name: 'answers.pdf', size: 3072}
+                    ],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -723,27 +752,52 @@ class DataManager {
                     studentId: 's002',
                     submittedTime: '2024-03-15T10:45:00Z',
                     content: '期中考试答卷，大部分题目完成。',
-                    files: ['exam_answers.pdf'],
+                    files: [
+                        {blobUrl: 'exam_answers.pdf', name: 'exam_answers.pdf', size: 4096}
+                    ],
                     status: 'pending',
                     score: null,
                     feedback: null,
                     gradedTime: null
                 }
             ],
-            coursePics: [
-                { id: 'coursePic001' , courseId: 'course001', picUrl: 'images/default1.jpg', level: 1},
-                { id: 'coursePic002' , courseId: 'course001', picUrl: 'images/default2.jpg', level: 2},
-                { id: 'coursePic003' , courseId: 'course004', picUrl: 'images/default2.jpg', level: 1}
-            ],
+            coursePics: [],
             courseMaterials: [
-                { id: 'courseMaterial001' , courseId: 'course001' , files: ['files/file1.cpp', 'files/testList.cpp'] },
-                { id: 'courseMaterial002' , courseId: 'course004' , files: ['files/db.cpp', 'files/ER_Relationships.png'] }
-            ],
-            assignmentMaterials: [
-                { id: 'assignmentMaterial001' , assignmentId: 'assign001' , files: ['files/file1.cpp', 'files/testList.cpp'] },
-                { id: 'assignmentMaterial002' , assignmentId: 'assign004' , files: ['files/db.cpp', 'files/ER_Relationships.png'] }
+                { id: 'courseMaterial001' , courseId: 'course001' , files: [
+                    {blobUrl: 'files/file1.cpp', name: 'file1.cpp', size: 2048},
+                    {blobUrl: 'files/testList.cpp', name: 'testList.cpp', size: 1536}
+                ] },
+                { id: 'courseMaterial002' , courseId: 'course004' , files: [
+                    {blobUrl: 'files/db.cpp', name: 'db.cpp', size: 3072},
+                    {blobUrl: 'files/ER_Relationships.png', name: 'ER_Relationships.png', size: 4096}
+                ] }
             ],
             grades: [],
+            courseGradeComponents: [{
+                courseId: 'course001',
+                components: [
+                    { name: '平时', weight: 0.3 },
+                    { name: '期中', weight: 0.4 },
+                    { name: '期末', weight: 0.3 }
+                ]
+                },
+                {
+                courseId: 'course004',
+                components: [
+                    { name: '平时', weight: 0.3 },
+                    { name: '期中', weight: 0.4 },
+                    { name: '期末', weight: 0.3 },
+                    { name: '作业', weight: 0.1 }
+                ]
+                },{
+                courseId: 'course006',
+                components: [
+                    { name: '平时', weight: 0.3 },
+                    { name: '期中', weight: 0.4 },
+                    { name: '期末', weight: 0.3 }
+                ]
+                }
+            ],
             materials: [],
             logs: [],
             backups: [],
@@ -809,6 +863,7 @@ class DataManager {
         if (!this.data.assignments) this.data.assignments = [];
         if (!this.data.submissions) this.data.submissions = [];
         if (!this.data.grades) this.data.grades = [];
+        if (!this.data.courseGradeComponents) this.data.courseGradeComponents = [];
         if (!this.data.departments) this.data.departments = [];
         if (!this.data.classes) this.data.classes = [];
         if (!this.data.materials) this.data.materials = [];
@@ -851,6 +906,57 @@ class DataManager {
                 }
             }
         });
+
+        // 兼容旧版课程内 gradingScheme 字段 -> 迁移到 courseGradeComponents
+        this.data.courses.forEach(course => {
+            if (course.gradingScheme && Array.isArray(course.gradingScheme)) {
+                const existing = this.data.courseGradeComponents.find(p => p.courseId === course.id);
+                if (!existing) {
+                    this.data.courseGradeComponents.push({ courseId: course.id, components: course.gradingScheme.map(s => ({ id: s.id || ('c' + Math.random().toString(36).slice(2,8)), name: s.name || s.title || '项', weight: s.weight || (s.percent? s.percent : 0) })) });
+                }
+            }
+        });
+
+        // 确保每个 courseGradeComponents 的 component 有 id；并尝试将 grades 中的 componentScores 映射到这些 id
+        if (Array.isArray(this.data.courseGradeComponents)) {
+            this.data.courseGradeComponents.forEach(cg => {
+                if (!cg.components || !Array.isArray(cg.components)) cg.components = [];
+                // 给缺失 id 的组件补 id
+                cg.components.forEach(comp => {
+                    if (!comp.id) comp.id = 'c' + Math.random().toString(36).slice(2,8);
+                });
+
+                // 映射已有 grades 的 componentScores（如果有缺失 id，按 name 匹配或生成新 id）
+                if (Array.isArray(this.data.grades)) {
+                    this.data.grades.forEach(g => {
+                        if (g.courseId !== cg.courseId) return;
+                        if (!g.componentScores || !Array.isArray(g.componentScores)) return;
+                        g.componentScores = g.componentScores.map(cs => {
+                            // 如果已有 id，保留
+                            if (cs && cs.id) return { id: cs.id, score: cs.score };
+                            // 尝试通过 name 字段匹配
+                            const name = cs && (cs.name || cs.title);
+                            let matched = null;
+                            if (name) matched = cg.components.find(c => c.name === name);
+                            if (matched) return { id: matched.id, score: cs.score };
+                            // 否则创建新 id 并保留原 name（以便日后人工核对）
+                            const newId = 'c' + Math.random().toString(36).slice(2,8);
+                            return { id: newId, score: cs.score, name: name };
+                        });
+
+                        // 重新计算总分
+                        const compMap = {};
+                        g.componentScores.forEach(cs => { compMap[cs.id] = cs.score; });
+                        let newTotal = 0;
+                        cg.components.forEach(comp => {
+                            const sc = compMap[comp.id] != null ? parseFloat(compMap[comp.id]) : 0;
+                            newTotal += sc * (comp.weight || 0); // comp.weight已经是小数形式，直接使用
+                        });
+                        g.totalScore = Math.round(newTotal * 100) / 100;
+                    });
+                }
+            });
+        }
         
         // 确保数据一致性
         this.ensureDataConsistency();
