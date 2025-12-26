@@ -1233,6 +1233,10 @@ class DataManager {
             const student = this.getUserById(enrollment.studentId);
             return {
                 ...student,
+                // 保持向后兼容，同时支持studentId和username
+                studentId: student.id,
+                username: student.username,
+                name: student.name,
                 enrollmentTime: enrollment.enrollmentTime
             };
         }).filter(student => student);

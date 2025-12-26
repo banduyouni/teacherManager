@@ -232,13 +232,23 @@ class TeacherDashboard {
         const importGradesBtn = document.getElementById('importGradesBtn');
         if (importGradesBtn) {
             importGradesBtn.addEventListener('click', () => {
-                // 创建隐藏文件输入用于选择CSV
+                // 创建隐藏文件输入用于选择Excel/CSV文件
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
-                fileInput.accept = '.csv,text/csv';
+                fileInput.accept = '.csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
                 fileInput.addEventListener('change', (e) => {
                     const files = e.target.files;
-                    if (files && files[0]) this.importGradesCSV(files[0]);
+                    if (files && files[0]) {
+                        const file = files[0];
+                        // 根据文件扩展名选择导入方法
+                        if (file.name.match(/\.(xlsx?|xls)$/)) {
+                            this.importGradesExcel(file);
+                        } else if (file.name.endsWith('.csv')) {
+                            this.importGradesCSV(file);
+                        } else {
+                            showMessage('不支持的文件格式，请选择Excel或CSV文件', 'error');
+                        }
+                    }
                 });
                 document.body.appendChild(fileInput);
                 fileInput.click();
@@ -4780,7 +4790,6 @@ class TeacherDashboard {
                     <th>姓名</th>
                     ${scheme.map(s => `<th>${s.name}</th>`).join('')}
                     <th>总评成绩</th>
-                    <th>操作</th>
                 </tr>
             `;
         }
@@ -4792,8 +4801,13 @@ class TeacherDashboard {
 
         // 表头由HTML静态定义，这里只渲染行
         gradeTableBody.innerHTML = students.map(student => {
-            // 查找已有成绩记录
-            const existing = dataManager.getData('grades').find(g => g.courseId === courseId && g.studentId === student.id);
+            // 优先通过username查找成绩记录，兼容旧数据（如果没有username则用studentId）
+            const existing = dataManager.getData('grades').find(g => 
+                g.courseId === courseId && (
+                    g.username === (student.username || student.id) || 
+                    (g.studentId === student.id && !g.username)
+                )
+            );
             const compMap = existing && existing.componentScores ? existing.componentScores.reduce((acc,cs)=>{acc[cs.id]=cs.score;return acc;},{}) : {};
             const inputs = scheme.map(s => {
                 const val = compMap[s.id] != null ? compMap[s.id] : '';
@@ -4839,6 +4853,11 @@ class TeacherDashboard {
         let saved = 0;
         rows.forEach(row => {
             const studentId = row.dataset.studentId;
+            const usernameInput = row.querySelector('td:first-child'); // 获取第一列（学号/username）
+            const nameInput = row.querySelector('td:nth-child(2)'); // 获取第二列（姓名）
+            const username = usernameInput ? usernameInput.textContent.trim() : '';
+            const name = nameInput ? nameInput.textContent.trim() : '';
+            
             if (!studentId) return;
             const inputs = Array.from(row.querySelectorAll('.grade-input'));
             const componentScores = inputs.map(i=>({ id: i.dataset.comp, score: parseFloat(i.value) || 0 }));
@@ -4848,12 +4867,25 @@ class TeacherDashboard {
                 return sum + (sc.score * w);
             }, 0);
 
-            // 查找或创建 grade 记录
-            let grade = dataManager.getData('grades').find(g => g.courseId === courseId && g.studentId === studentId);
+            // 查找或创建 grade 记录，使用username作为主要标识
+            let grade = dataManager.getData('grades').find(g => g.courseId === courseId && g.username === username);
             if (!grade) {
-                grade = { id: dataManager.generateId(), courseId: courseId, studentId: studentId, componentScores: componentScores, totalScore: Math.round(total*100)/100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                grade = { 
+                    id: dataManager.generateId(), 
+                    courseId: courseId, 
+                    studentId: studentId, // 保持向后兼容
+                    username: username,  // 新增username字段
+                    name: name,         // 新增name字段
+                    componentScores: componentScores, 
+                    totalScore: Math.round(total*100)/100, 
+                    createdAt: new Date().toISOString(), 
+                    updatedAt: new Date().toISOString() 
+                };
                 dataManager.data.grades.push(grade);
             } else {
+                grade.studentId = studentId; // 更新studentId保持兼容
+                grade.username = username;   // 确保username是最新的
+                grade.name = name;          // 确保name是最新的
                 grade.componentScores = componentScores;
                 grade.totalScore = Math.round(total*100)/100;
                 grade.updatedAt = new Date().toISOString();
@@ -4865,7 +4897,268 @@ class TeacherDashboard {
         showMessage(`已保存 ${saved} 条成绩记录`, 'success');
     }
 
-    // 导入CSV（简单实现：首列为学号/学号或studentId，后续列对应构成或直接总分）
+    // 导入Excel/CSV文件（支持自动识别成绩构成列）
+    async importGradesExcel(file) {
+        try {
+            const courseId = document.getElementById('gradeCourseFilter').value;
+            if (!courseId) { 
+                showMessage('请先选择课程', 'info'); 
+                return; 
+            }
+
+            // 获取课程成绩构成
+            const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
+            const gradeComponents = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components : [];
+            
+            if (gradeComponents.length === 0) {
+                showMessage('该课程尚未设置成绩构成，请先设置成绩构成', 'warning');
+                return;
+            }
+
+            // 读取文件内容
+            const content = await this.readExcelFile(file);
+            const data = this.parseExcelContent(content);
+            
+            if (!data || data.length < 2) {
+                showMessage('文件内容不足或格式错误', 'error');
+                return;
+            }
+
+            // 解析表头和成绩数据
+            const { headers, rows, columnMapping } = this.parseGradeData(data, gradeComponents);
+            
+            if (rows.length === 0) {
+                showMessage('没有找到有效的成绩数据', 'warning');
+                return;
+            }
+
+            // 导入成绩
+            const importResult = this.processGradeImport(courseId, headers, rows, gradeComponents, columnMapping);
+            
+            if (importResult.successCount > 0) {
+                dataManager.saveData();
+                this.onGradeCourseChange(courseId);
+                showMessage(`成功导入 ${importResult.successCount} 条成绩记录，${importResult.skipCount} 条被跳过`, 'success');
+            } else {
+                showMessage('没有成功导入任何成绩记录', 'warning');
+            }
+
+        } catch (error) {
+            console.error('导入成绩失败:', error);
+            showMessage('导入失败：' + error.message, 'error');
+        }
+    }
+
+    // 读取Excel/CSV文件
+    readExcelFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = e.target.result;
+                    if (file.name.endsWith('.csv')) {
+                        // CSV文件处理
+                        const lines = data.split(/\r?\n/).filter(line => line.trim());
+                        const result = lines.map(line => line.split(',').map(cell => cell.trim()));
+                        resolve(result);
+                    } else if (file.name.match(/\.(xlsx?|xls)$/)) {
+                        // Excel文件处理 - 使用简单的SheetJS实现
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        resolve(jsonData);
+                    } else {
+                        reject(new Error('不支持的文件格式'));
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            if (file.name.match(/\.(xlsx?|xls)$/)) {
+                reader.readAsBinaryString(file);
+            } else {
+                reader.readAsText(file, 'utf-8');
+            }
+        });
+    }
+
+    // 解析Excel内容（如果没有SheetJS库，使用简单实现）
+    parseExcelContent(content) {
+        // 简单实现：假设content已经是二维数组
+        // 实际项目中应该使用专业的Excel解析库
+        if (Array.isArray(content)) {
+            return content;
+        }
+        
+        // 如果是字符串，尝试按行分割
+        if (typeof content === 'string') {
+            return content.split(/\r?\n/).map(line => line.split(',').map(cell => cell.trim()));
+        }
+        
+        return null;
+    }
+
+    // 解析成绩数据，自动匹配列
+    parseGradeData(data, gradeComponents) {
+        if (!data || data.length < 2) return { headers: [], rows: [] };
+
+        const headers = data[0].map(h => String(h).trim());
+        const rows = data.slice(1).filter(row => row && row.length > 0);
+
+        // 创建列映射
+        const columnMapping = {
+            studentIdCol: -1,    // 学号列
+            nameCol: -1,         // 姓名列
+            componentCols: {}     // 成绩构成列
+        };
+
+        // 查找学号列（可能的列名）
+        const studentIdKeywords = ['学号', '学生编号', '学生证号', '账号', 'username', 'studentId', 'ID'];
+        columnMapping.studentIdCol = headers.findIndex(header => 
+            studentIdKeywords.some(keyword => header.includes(keyword))
+        );
+
+        // 查找姓名列（可能的列名）
+        const nameKeywords = ['姓名', '名字', '学生姓名', 'name', '学生'];
+        columnMapping.nameCol = headers.findIndex(header => 
+            nameKeywords.some(keyword => header.includes(keyword))
+        );
+
+        // 查找各成绩构成列
+        gradeComponents.forEach(component => {
+            const possibleNames = [
+                component.name,
+                component.name + '成绩',
+                component.name + '分数',
+                component.name + '得分'
+            ];
+            
+            const colIndex = headers.findIndex(header => 
+                possibleNames.some(name => header.includes(name))
+            );
+            
+            if (colIndex !== -1) {
+                columnMapping.componentCols[component.id] = colIndex;
+            }
+        });
+
+        return { headers, rows, columnMapping };
+    }
+
+    // 处理成绩导入
+    processGradeImport(courseId, headers, rows, gradeComponents, columnMapping) {
+        let successCount = 0;
+        let skipCount = 0;
+
+        // 获取当前课程的学生列表（只包含真正选修了该课程的学生）
+        const enrolledStudents = dataManager.getCourseStudents(courseId);
+        const enrolledStudentMap = new Map();
+        
+        // 创建学生映射表，支持通过username、id、name查找
+        enrolledStudents.forEach(student => {
+            enrolledStudentMap.set(student.username || student.id, student);
+            enrolledStudentMap.set(student.id, student);
+            enrolledStudentMap.set(student.name, student);
+        });
+
+        rows.forEach((row, rowIndex) => {
+            try {
+                // 获取学号（优先学号，如果没有则使用姓名）
+                const studentIdValue = columnMapping.studentIdCol >= 0 ? 
+                    String(row[columnMapping.studentIdCol] || '').trim() : '';
+                const nameValue = columnMapping.nameCol >= 0 ? 
+                    String(row[columnMapping.nameCol] || '').trim() : '';
+
+                // 首先通过 enrolledStudentMap 查找学生（确保是选修了该课程的学生）
+                let student = null;
+                if (studentIdValue) {
+                    // 优先通过username查找
+                    student = enrolledStudentMap.get(studentIdValue);
+                    if (!student) {
+                        student = enrolledStudentMap.get(studentIdValue);
+                    }
+                } else if (nameValue) {
+                    // 如果没有学号，通过姓名查找
+                    student = enrolledStudentMap.get(nameValue);
+                }
+
+                if (!student) {
+                    // 如果在 enrolledStudentMap 中找不到，说明该学生没有选修这门课程
+                    console.warn(`第${rowIndex + 2}行：学生 ${studentIdValue || nameValue} 未选修该课程或不存在`);
+                    skipCount++;
+                    return;
+                }
+
+                // 收集成绩数据
+                const componentScores = [];
+                let hasValidScore = false;
+
+                gradeComponents.forEach(component => {
+                    const colIndex = columnMapping.componentCols[component.id];
+                    if (colIndex >= 0 && colIndex < row.length) {
+                        const score = parseFloat(row[colIndex]) || 0;
+                        if (score >= 0) {
+                            componentScores.push({
+                                id: component.id,
+                                name: component.name,
+                                score: score
+                            });
+                            hasValidScore = true;
+                        }
+                    }
+                });
+
+                if (!hasValidScore) {
+                    console.warn(`第${rowIndex + 2}行：没有有效的成绩数据`);
+                    skipCount++;
+                    return;
+                }
+
+                // 计算总分
+                const totalScore = componentScores.reduce((sum, cs) => {
+                    const component = gradeComponents.find(c => c.id === cs.id);
+                    const weight = component ? component.weight : 0;
+                    return sum + (cs.score * weight);
+                }, 0);
+
+                // 查找或创建成绩记录
+                const username = student.username || student.id;
+                let grade = dataManager.getData('grades').find(g => 
+                    g.courseId === courseId && g.username === username
+                );
+
+                const gradeData = {
+                    courseId: courseId,
+                    studentId: student.id,
+                    username: username,
+                    name: student.name,
+                    componentScores: componentScores,
+                    totalScore: Math.round(totalScore * 100) / 100,
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (!grade) {
+                    gradeData.id = dataManager.generateId();
+                    gradeData.createdAt = new Date().toISOString();
+                    dataManager.data.grades.push(gradeData);
+                } else {
+                    Object.assign(grade, gradeData);
+                    dataManager.updateData('grades', grade.id, grade);
+                }
+
+                successCount++;
+
+            } catch (error) {
+                console.error(`处理第${rowIndex + 2}行时出错:`, error);
+                skipCount++;
+            }
+        });
+
+        return { successCount, skipCount };
+    }
+
+    // 保留原有的CSV导入方法作为后备
     importGradesCSV(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -4879,19 +5172,37 @@ class TeacherDashboard {
             const cgEntry = dataManager.getData('courseGradeComponents').find(p => p.courseId === courseId);
             const scheme = cgEntry && Array.isArray(cgEntry.components) ? cgEntry.components.map(c => ({...c, weight: c.weight * 100})) : [];
 
+            // 获取当前课程的学生列表（只包含真正选修了该课程的学生）
+            const enrolledStudents = dataManager.getCourseStudents(courseId);
+            const enrolledStudentMap = new Map();
+            
+            // 创建学生映射表，支持通过username、id查找
+            enrolledStudents.forEach(student => {
+                enrolledStudentMap.set(student.username || student.id, student);
+                enrolledStudentMap.set(student.id, student);
+            });
+
             rows.forEach(cols=>{
                 const studentKey = cols[0];
-                const student = dataManager.getData('users').find(u=>u.username===studentKey || u.id===studentKey);
-                if (!student) return;
+                // 只从选修了该课程的学生中查找
+                const student = enrolledStudentMap.get(studentKey) || 
+                              enrolledStudentMap.get(studentKey);
+                if (!student) {
+                    console.warn(`学生 ${studentKey} 未选修该课程或不存在`);
+                    return;
+                }
                 // 如果只有两列且第二列为总分，则保存为 totalScore
                 if (cols.length === 2 && scheme.length === 0) {
                     const total = parseFloat(cols[1]) || 0;
-                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && g.studentId===student.id);
+                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && (g.username===student.username || g.studentId===student.id));
                     if (!grade) {
-                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, componentScores: [], totalScore: total, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, username: student.username, name: student.name, componentScores: [], totalScore: total, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
                         dataManager.data.grades.push(grade);
                     } else {
-                        grade.totalScore = total; dataManager.updateData('grades', grade.id, grade);
+                        grade.totalScore = total; 
+                        grade.username = student.username;
+                        grade.name = student.name;
+                        dataManager.updateData('grades', grade.id, grade);
                     }
                 } else {
                     // 按组件列顺序映射
@@ -4904,12 +5215,16 @@ class TeacherDashboard {
                         const comp = scheme.find(s=>s.id===sc.id);
                         return sum + (sc.score * (comp?comp.weight/100:0)); // 将存储的小数值转换为百分比进行计算
                     }, 0);
-                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && g.studentId===student.id);
+                    let grade = dataManager.getData('grades').find(g=>g.courseId===courseId && (g.username===student.username || g.studentId===student.id));
                     if (!grade) {
-                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, componentScores, totalScore: Math.round(total*100)/100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                        grade = { id: dataManager.generateId(), courseId, studentId: student.id, username: student.username, name: student.name, componentScores, totalScore: Math.round(total*100)/100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
                         dataManager.data.grades.push(grade);
                     } else {
-                        grade.componentScores = componentScores; grade.totalScore = Math.round(total*100)/100; dataManager.updateData('grades', grade.id, grade);
+                        grade.componentScores = componentScores; 
+                        grade.totalScore = Math.round(total*100)/100;
+                        grade.username = student.username;
+                        grade.name = student.name;
+                        dataManager.updateData('grades', grade.id, grade);
                     }
                 }
             });
