@@ -377,40 +377,6 @@
         </div>
     </div>
 
-
-    <!-- 重置密码弹窗（演示：通过邮箱验证后获取令牌） -->
-    <div id="resetPasswordModal" class="modal forgot-modal">
-        <div class="modal-backdrop" onclick="closeResetPasswordModal()"></div>
-        <div class="modal-content forgot-modal-content">
-            <div class="modal-header">
-                <h3>重置密码</h3>
-                <button class="modal-close" onclick="closeResetPasswordModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="resetPasswordForm">
-                    <div class="form-group">
-                        <label for="resetToken">重置令牌</label>
-                        <input type="text" id="resetToken" placeholder="请输入邮件中的重置令牌" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="newPassword">新密码</label>
-                        <input type="password" id="newPassword" placeholder="请输入新密码" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmNewPassword">确认新密码</label>
-                        <input type="password" id="confirmNewPassword" placeholder="再次输入新密码" required>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn-secondary" id="cancelResetPassword">取消</button>
-                        <button type="submit" class="btn-primary">确认重置</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- 消息提示 -->
     <div id="messageContainer" class="message-container"></div>
 
