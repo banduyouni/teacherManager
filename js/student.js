@@ -1137,7 +1137,7 @@ class StudentDashboard {
                     <i class="fas fa-file"></i>
                     <span class="file-name">${file.name}</span>
                     <span class="file-size">${this.formatFileSize(file.size)}</span>
-                    <button type="button" class="file-download" onclick="studentDashboard.downloadSubmissionFile('${tempPath}', '${file.name}')" title="下载文件">
+                    <button type="button" class="file-download" onclick="event.preventDefault(); dataManager.downloadTempFile('${tempPath}')" title="下载文件">
                         <i class="fas fa-download"></i>
                     </button>
                     <button type="button" class="file-remove" onclick="studentDashboard.removeAssignmentFile(${index})" title="移除文件">
@@ -1158,7 +1158,7 @@ class StudentDashboard {
                     <i class="fas fa-file"></i>
                     <span class="file-name">${file.name}</span>
                     <span class="file-size">${this.formatFileSize(file.size)}</span>
-                    <button type="button" class="file-download" onclick="studentDashboard.downloadSubmissionFile('${tempPath}', '${file.name}')" title="下载文件">
+                    <button type="button" class="file-download" onclick="event.preventDefault(); dataManager.downloadTempFile('${tempPath}')" title="下载文件">
                         <i class="fas fa-download"></i>
                     </button>
                     <button type="button" class="file-remove" onclick="studentDashboard.removeExamFile(${index})" title="移除文件">
@@ -1167,6 +1167,207 @@ class StudentDashboard {
                 </div>
             `;
         }).join('');
+    }
+
+    // 下载文件
+    downloadFile(submissionId, fileIndex, fileIdentifier, fileType) {
+        // 阻止事件冒泡
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const submissions = dataManager.getStudentSubmissions(this.userData.id);
+        const submission = submissions.find(s => s.id === submissionId);
+        
+        if (!submission) {
+            showMessage('找不到提交记录', 'error');
+            return;
+        }
+
+        let file, fileName;
+        
+        if (fileType === 'string') {
+            // 旧格式：简单文件名
+            file = { name: fileIdentifier };
+            fileName = fileIdentifier;
+        } else {
+            // 新格式：详细文件信息
+            file = submission.files.find(f => f.localPath === fileIdentifier);
+            fileName = file ? file.name : fileIdentifier;
+        }
+
+        if (!file) {
+            showMessage('找不到文件信息', 'error');
+            return;
+        }
+
+        try {
+            // 生成模拟的文件内容
+            const fileContent = this.generateMockFileContent(fileName, submission);
+
+            // 创建下载链接
+            const blob = new Blob([fileContent], { 
+                type: this.getMimeType(fileName) 
+            });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+
+            showMessage(`正在下载文件: ${fileName}`, 'success');
+        } catch (error) {
+            console.error('下载文件失败:', error);
+            showMessage('下载文件失败，请重试', 'error');
+        }
+    }
+
+    // 生成模拟文件内容
+    generateMockFileContent(fileName, submission) {
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+        const assignment = dataManager.getData('assignments').find(a => a.id === submission.assignmentId);
+        
+        let content = '';
+        
+        try {
+            switch (fileExtension) {
+                case 'txt':
+                case 'md':
+                    content = `# ${assignment?.title || '作业提交'}
+
+**学生**: ${this.userData.name} (${this.userData.id})
+**提交时间**: ${new Date(submission.submittedTime).toLocaleString()}
+**作业内容**: ${submission.content || '无文字说明'}
+
+---
+这是由系统生成的模拟文件内容。
+实际应用中，这里应该是用户上传的真实文件内容。
+`;
+                    break;
+                    
+                case 'cpp':
+                case 'c':
+                case 'java':
+                case 'py':
+                case 'js':
+                    content = `// ${fileName}
+// 作业: ${assignment?.title || '编程作业'}
+// 学生: ${this.userData.name}
+// 提交时间: ${new Date(submission.submittedTime).toLocaleString()}
+
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello, World!" << endl;
+    cout << "作业: ${assignment?.title || '编程作业'}" << endl;
+    cout << "学生: ${this.userData.name}" << endl;
+    cout << "提交时间: ${new Date(submission.submittedTime).toLocaleString()}" << endl;
+    return 0;
+}
+`;
+                    break;
+                    
+                case 'pdf':
+                case 'doc':
+                case 'docx':
+                    content = `文件: ${fileName}
+作业: ${assignment?.title || '文档作业'}
+学生: ${this.userData.name}
+提交时间: ${new Date(submission.submittedTime).toLocaleString()}
+文件标识符: ${submission.files.find(f => f.name === fileName)?.localPath || 'N/A'}
+
+注意：由于浏览器安全限制，无法访问真实的${fileExtension.toUpperCase()}文件内容。
+这里是模拟的文件信息，包含基本元数据。
+
+作业内容说明:
+${submission.content || '无文字说明'}
+`;
+                    break;
+                    
+                case 'zip':
+                case 'rar':
+                    content = `压缩包: ${fileName}
+作业: ${assignment?.title || '压缩文件作业'}
+学生: ${this.userData.name}
+提交时间: ${new Date(submission.submittedTime).toLocaleString()}
+
+注意：由于浏览器安全限制，无法访问真实的压缩包内容。
+这里是模拟的压缩包信息。
+
+压缩包可能包含:
+- 源代码文件
+- 文档说明
+- 测试用例
+- 运行结果截图
+
+作业内容说明:
+${submission.content || '无文字说明'}
+`;
+                    break;
+                    
+                default:
+                    content = `文件: ${fileName}
+作业: ${assignment?.title || '未知作业'}
+学生: ${this.userData.name}
+提交时间: ${new Date(submission.submittedTime).toLocaleString()}
+文件类型: ${fileExtension.toUpperCase()}
+文件标识符: ${submission.files.find(f => f.name === fileName)?.localPath || 'N/A'}
+
+注意：由于浏览器安全限制，无法访问真实的上传文件内容。
+这里是模拟的文件信息。
+
+作业内容说明:
+${submission.content || '无文字说明'}
+`;
+            }
+        } catch (error) {
+            console.error('生成文件内容失败:', error);
+            content = `文件: ${fileName}
+生成内容时出错，请检查文件格式。
+错误信息: ${error.message}`;
+        }
+        
+        return content;
+    }
+
+    // 获取MIME类型
+    getMimeType(fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        const mimeTypes = {
+            'txt': 'text/plain',
+            'md': 'text/markdown',
+            'cpp': 'text/x-c++src',
+            'c': 'text/x-csrc',
+            'java': 'text/x-java-source',
+            'py': 'text/x-python',
+            'js': 'application/javascript',
+            'html': 'text/html',
+            'css': 'text/css',
+            'json': 'application/json',
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed'
+        };
+        
+        return mimeTypes[extension] || 'text/plain';
+    }
+
+    // HTML转义，防止XSS攻击
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // 格式化文件大小
@@ -1472,30 +1673,45 @@ class StudentDashboard {
                             <h4>附件文件</h4>
                             <div class="files-list">
                                 ${submission.files.map(file => {
-                                    // 检查是否是新的临时路径格式
-                                    if (typeof file === 'object' && file.tempPath) {
+                                    // 统一文件处理逻辑，参考教师端方式
+                                    const fileName = file && (file.originalName || file.name) ? file.originalName || file.name : (typeof file === 'string' ? file : '未知文件');
+                                    
+                                    if (file && file.tempPath) {
+                                        // 有临时路径的文件 - 直接使用临时文件系统下载
                                         return `
                                             <div class="file-item downloadable">
                                                 <i class="fas fa-file"></i>
-                                                <span class="file-name">${file.originalName}</span>
-                                                <span class="file-size">${this.formatFileSize(file.size)}</span>
-                                                <button class="file-download-btn" onclick="studentDashboard.downloadSubmissionFile('${file.tempPath}', '${file.originalName}')" title="下载文件">
+                                                <span class="file-name" title="${this.escapeHtml(fileName)}">${this.escapeHtml(fileName)}</span>
+                                                <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
+                                                <button class="file-download-btn" onclick="event.preventDefault(); dataManager.downloadTempFile('${this.escapeHtml(file.tempPath)}')" title="下载 ${this.escapeHtml(fileName)}">
                                                     <i class="fas fa-download"></i>
-                                                    下载
                                                 </button>
                                             </div>
                                         `;
                                     } else if (typeof file === 'string') {
-                                        // 兼容旧格式，只显示文件名（无下载功能）
+                                        // 旧格式字符串 - 生成模拟内容下载
                                         return `
-                                            <div class="file-item">
+                                            <div class="file-item downloadable">
                                                 <i class="fas fa-file"></i>
-                                                <span class="file-name">${file}</span>
+                                                <span class="file-name" title="${this.escapeHtml(file)}">${this.escapeHtml(file)}</span>
+                                                <span class="file-size">未知大小</span>
+                                                <button class="file-download-btn" onclick="studentDashboard.downloadSubmissionFile('${this.escapeHtml(file)}', '${this.escapeHtml(file)}', 'string')" title="下载 ${this.escapeHtml(file)}">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            </div>
+                                        `;
+                                    } else {
+                                        // 其他格式的文件对象
+                                        const fileName = file.name || '未知文件';
+                                        return `
+                                            <div class="file-item downloadable">
+                                                <i class="fas fa-file"></i>
+                                                <span class="file-name" title="${this.escapeHtml(fileName)}">${this.escapeHtml(fileName)}</span>
+                                                <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
                                                 <span class="file-status">已上传</span>
                                             </div>
                                         `;
                                     }
-                                    return '';
                                 }).join('')}
                             </div>
                         </div>
@@ -1771,44 +1987,84 @@ class StudentDashboard {
         dataManager.downloadTempFile(tempPath);
     }
 
-    // 下载提交的文件
-    downloadSubmissionFile(tempPath, originalName) {
-        const fileData = dataManager.getTempFile(tempPath);
-        if (!fileData) {
-            // 如果临时文件不存在，尝试从提交记录中重新创建
-            this.recreateTempFileFromSubmission(tempPath, originalName);
-        } else {
-            dataManager.downloadTempFile(tempPath);
-        }
-    }
-
-    // 从提交记录重新创建临时文件
-    recreateTempFileFromSubmission(tempPath, originalName) {
-        // 查找所有包含该文件的提交记录
-        const submissions = dataManager.getData('submissions').filter(submission => 
-            submission.files && submission.files.some(file => 
-                (typeof file === 'object' && file.tempPath === tempPath) ||
-                (typeof file === 'string' && file === originalName)
-            )
-        );
-
-        if (submissions.length > 0) {
-            const submission = submissions[0];
-            const file = submission.files.find(file => 
-                (typeof file === 'object' && file.tempPath === tempPath) ||
-                (typeof file === 'string' && file === originalName)
-            );
-
-            if (file) {
-                // 创建一个示例文件数据供下载
-                const fileContent = this.createFileContent(file.originalName || file, submission);
-                dataManager.storeTempFileData(tempPath, fileContent, file.originalName || file);
-                dataManager.downloadTempFile(tempPath);
-                return;
+    // 下载提交的文件（参照教师端逻辑）
+    downloadSubmissionFile(fileIdentifier, originalName, fileType) {
+        try {
+            console.log('下载文件参数:', {
+                fileIdentifier: fileIdentifier,
+                originalName: originalName,
+                fileType: fileType,
+                userData: this.userData?.id
+            });
+            
+            if (fileType === 'temp') {
+                // 新格式：有临时路径的文件
+                console.log('使用临时文件下载:', fileIdentifier);
+                const tempFile = dataManager.tempFiles.get(fileIdentifier);
+                console.log('临时文件数据:', tempFile);
+                
+                if (tempFile) {
+                    dataManager.downloadTempFile(fileIdentifier);
+                    showMessage(`正在下载文件: ${originalName}`, 'info');
+                } else {
+                    console.error('临时文件不存在:', fileIdentifier);
+                    showMessage('文件不存在或已过期', 'error');
+                }
+            } else if (fileType === 'string') {
+                // 旧格式：简单文件名，生成模拟内容下载
+                console.log('使用模拟文件下载:', originalName);
+                const submissions = dataManager.getStudentSubmissions(this.userData.id);
+                console.log('用户所有提交:', submissions);
+                
+                const submission = submissions.find(s => {
+                    console.log('检查提交:', s.id, s.files);
+                    return s.files && (s.files.includes(originalName) || 
+                           (Array.isArray(s.files) && s.files.some(f => 
+                               typeof f === 'string' ? f === originalName : f.name === originalName)));
+                });
+                
+                console.log('找到匹配的提交:', submission);
+                
+                if (submission) {
+                    const fileContent = this.generateMockFileContent(originalName, submission);
+                    console.log('生成的文件内容长度:', fileContent.length);
+                    
+                    const blob = new Blob([fileContent], { 
+                        type: this.getMimeType(originalName) 
+                    });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = originalName;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    
+                    showMessage(`正在下载文件: ${originalName}`, 'success');
+                } else {
+                    console.error('找不到文件信息:', originalName);
+                    showMessage('找不到文件信息', 'error');
+                }
+            } else {
+                console.error('不支持的文件类型:', fileType);
+                showMessage('不支持的文件类型', 'error');
             }
+            
+            // 记录下载日志
+            if (this.userData && this.userData.id) {
+                dataManager.addLog(this.userData.id, 'download_submission_file', `下载文件: ${originalName}`);
+            }
+            
+        } catch (error) {
+            console.error('下载文件失败:', error);
+            showMessage(`下载文件失败: ${originalName}`, 'error');
         }
-
-        showMessage('文件不存在或已被清理，无法下载', 'error');
     }
 
     // 计算考试用时
