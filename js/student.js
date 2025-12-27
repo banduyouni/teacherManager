@@ -241,13 +241,20 @@ class StudentDashboard {
 
     // 计算课程进度
     calculateCourseProgress(courseId) {
-        // 优先使用手动设置的进度
-        const progressData = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-        if (progressData[courseId] && progressData[courseId].studentId === this.userData.id) {
-            return progressData[courseId].progress;
+        // 检查是否在grades数组中有成绩记录（根据新的数据结构）
+        // 支持两种字段名：studentid 和 studentId，以及username匹配
+        const grade = this.gradesData.find(g => 
+            g.courseId === courseId && (
+                g.studentid === this.userData.id || 
+                g.studentId === this.userData.id ||
+                g.username === this.userData.username
+            )
+        );
+        if (grade) {
+            return 100; // 有成绩记录则课程完成度为100%
         }
 
-        // 如果没有手动设置，则基于作业完成情况计算
+        // 如果没有成绩，则基于作业完成情况自动计算
         const assignments = dataManager.getCourseHomework(courseId);
         if (assignments.length === 0) return 0;
 
@@ -262,54 +269,7 @@ class StudentDashboard {
         return Math.round((completedAssignments / assignments.length) * 100);
     }
 
-    // 为完成的课程生成成绩
-    generateGradeForCompletedCourse(courseId, course) {
-        // 检查是否已经有成绩
-        const existingGrade = this.gradesData.find(g => g.courseId === courseId && g.studentId === this.userData.id);
-        if (existingGrade) {
-            return false; // 已有成绩，不再生成
-        }
 
-        // 生成随机成绩 (60-100分)
-        const score = Math.round(Math.random() * 40 + 60);
-        
-        // 根据成绩计算绩点 (等比例换算：4.5对应100分)
-        const gpa = (score / 100 * 4.5).toFixed(2);
-        
-        // 生成成绩记录
-        const grade = {
-            id: dataManager.generateId(),
-            studentId: this.userData.id,
-            courseId: courseId,
-            courseCode: course.courseCode,
-            courseName: course.courseName,
-            credits: course.credits,
-            totalScore: score,
-            gpa: parseFloat(gpa),
-            semester: this.getCurrentSemester(),
-            gradeTime: new Date().toISOString(),
-            status: 'published',
-            gradeDetails: {
-                regularScore: Math.round(score * 0.3),  // 平时成绩30%
-                midtermScore: Math.round(score * 0.3),   // 期中成绩30%
-                finalScore: Math.round(score * 0.4),     // 期末成绩40%
-                attendanceScore: Math.round(Math.random() * 5 + 5) // 出勤分数5-10分
-            }
-        };
-
-        // 保存成绩到数据管理器
-        const data = dataManager.getData();
-        if (!data.grades) {
-            data.grades = [];
-        }
-        data.grades.push(grade);
-        dataManager.saveData();
-
-        // 重新加载成绩数据
-        this.gradesData = dataManager.getStudentGrades(this.userData.id);
-
-        return true;
-    }
 
     // 获取当前学期
     getCurrentSemester() {
@@ -461,14 +421,7 @@ class StudentDashboard {
     cleanCourseData(courseId) {
         const data = dataManager.getData();
         
-        // 1. 清除该课程的进度数据
-        const progressData = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-        if (progressData[courseId]) {
-            delete progressData[courseId];
-            localStorage.setItem('courseProgress', JSON.stringify(progressData));
-        }
-        
-        // 2. 清除该课程的作业提交记录
+        // 1. 清除该课程的作业提交记录
         if (data.submissions) {
             data.submissions = data.submissions.filter(submission => {
                 const assignment = data.assignments?.find(a => a.id === submission.assignmentId);
@@ -490,13 +443,6 @@ class StudentDashboard {
 
     // 初始化课程状态（确保新选课的课程状态正确）
     initializeCourseState(courseId) {
-        // 确保没有残留的进度数据
-        const progressData = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-        if (progressData[courseId]) {
-            delete progressData[courseId];
-            localStorage.setItem('courseProgress', JSON.stringify(progressData));
-        }
-        
         // 确保没有残留的成绩记录
         const data = dataManager.getData();
         if (data.grades) {
@@ -513,68 +459,7 @@ class StudentDashboard {
 
 
 
-    // 更新课程进度
-    updateCourseProgress(courseId, progressValue) {
-        const progress = parseInt(progressValue);
-        
-        // 输入验证
-        if (isNaN(progress) || progress < 0 || progress > 100) {
-            showMessage('请输入0-100之间的有效数字', 'error');
-            // 重置输入框为当前保存的进度值
-            const currentProgress = this.calculateCourseProgress(courseId);
-            const inputElement = document.getElementById(`progress-input-${courseId}`);
-            if (inputElement) {
-                inputElement.value = currentProgress;
-                inputElement.classList.add('error');
-                setTimeout(() => {
-                    inputElement.classList.remove('error');
-                    inputElement.focus();
-                }, 500);
-            }
-            return;
-        }
 
-        // 获取课程信息
-        const course = this.coursesData.find(c => c.id === courseId);
-        const courseName = course ? course.courseName : '课程';
-
-        // 保存进度到本地存储
-        const progressData = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-        progressData[courseId] = {
-            studentId: this.userData.id,
-            progress: progress,
-            lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('courseProgress', JSON.stringify(progressData));
-
-        // 检查是否达到100%进度，如果是则生成成绩
-        let gradeGenerated = false;
-        if (progress === 100) {
-            gradeGenerated = this.generateGradeForCompletedCourse(courseId, course);
-        }
-
-        // 添加视觉反馈效果
-        const inputElement = document.getElementById(`progress-input-${courseId}`);
-        
-        if (inputElement) {
-            // 添加成功动画效果
-            inputElement.classList.add('success');
-            setTimeout(() => {
-                inputElement.classList.remove('success');
-            }, 1500);
-        }
-
-        // 刷新相关显示
-        this.renderMyCourses();
-        this.renderGrades();
-        
-        // 显示不同的成功消息
-        if (gradeGenerated) {
-            showMessage(`🎉 恭喜！"${courseName}" 学习进度达到100%，已生成最终成绩`, 'success');
-        } else {
-            showMessage(`✅ "${courseName}" 学习进度已更新为 ${progress}%`, 'success');
-        }
-    }
 
     // 退选课程
     dropCourse(courseId) {
@@ -630,73 +515,265 @@ class StudentDashboard {
         const teacher = dataManager.getUserById(course.teacherId);
         const department = dataManager.getData('departments').find(d => d.id === course.departmentId);
         const assignments = dataManager.getCourseHomework(courseId);
-
-        const modal = document.getElementById('courseDetailModal');
-        const modalTitle = document.getElementById('modalCourseTitle');
-        const modalContent = document.getElementById('modalCourseContent');
-
-        modalTitle.textContent = course.courseName;
         
-        modalContent.innerHTML = `
-            <div class="course-detail">
-                <div class="detail-section">
-                    <h4>基本信息</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>课程编号:</label>
-                            <span>${course.courseCode}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>学分:</label>
-                            <span>${course.credits}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>授课教师:</label>
-                            <span>${teacher ? teacher.name : '未知教师'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>所属院系:</label>
-                            <span>${department ? department.departmentName : '未知院系'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>课程类型:</label>
-                            <span>${course.category === 'required' ? '必修' : '选修'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>选课人数:</label>
-                            <span>${course.currentStudents}/${course.maxStudents}</span>
-                        </div>
-                    </div>
+        // 获取课程课件
+        const courseMaterials = dataManager.getData('courseMaterials').filter(cm => cm.courseId === courseId);
+        const materialsList = this.processCourseMaterials(courseMaterials);
+
+        // 创建动态模态框以确保样式一致
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'course-detail-modal-overlay';
+        modalOverlay.innerHTML = `
+            <div class="course-detail-modal">
+                <div class="detail-header">
+                    <h3>📚 课程详情 - ${course.courseName}</h3>
+                    <button class="close-btn" onclick="this.closest('.course-detail-modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                
-                <div class="detail-section">
-                    <h4>课程描述</h4>
-                    <p>${course.description}</p>
-                </div>
-                
-                <div class="detail-section">
-                    <h4>作业与考试安排</h4>
-                    <div class="assignments-list">
-                        ${assignments.length > 0 ? assignments.map(assignment => `
-                            <div class="assignment-item">
-                                <h5>${assignment.title}</h5>
-                                <p>类型: ${assignment.type === 'assignment' ? '作业' : '考试'}</p>
-                                ${assignment.type === 'exam' ? `<p>考试时长: ${assignment.duration || 120}分钟</p>` : ''}
-                                <p>满分: ${assignment.maxScore}分</p>
-                                <p>截止时间: ${new Date(assignment.endTime).toLocaleString()}</p>
+                <div class="detail-content">
+                    <div class="course-detail">
+                        <div class="detail-section">
+                            <h4>📋 基本信息</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>课程编号:</label>
+                                    <span>${course.courseCode}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>学分:</label>
+                                    <span>${course.credits}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>授课教师:</label>
+                                    <span>${teacher ? teacher.name : '未知教师'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>所属院系:</label>
+                                    <span>${department ? department.departmentName : '未知院系'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>课程类型:</label>
+                                    <span>${course.category === 'required' ? '必修' : '选修'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>选课人数:</label>
+                                    <span>${course.currentStudents}/${course.maxStudents}</span>
+                                </div>
                             </div>
-                        `).join('') : '<p>暂无作业和考试安排</p>'}
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📝 课程描述</h4>
+                            <div class="description-content">
+                                <p>${course.description}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📚 课程课件</h4>
+                            <div class="course-materials">
+                                ${materialsList.length > 0 ? materialsList.map(material => `
+                                    <div class="material-item">
+                                        <div class="material-info">
+                                            <i class="fas fa-file-${this.getFileIcon(material.extension)}"></i>
+                                            <div>
+                                                <h5>${this.escapeHtml(material.name)}</h5>
+                                                <p>文件类型: <span class="file-type-badge">${material.extension.toUpperCase()}</span> | 文件大小: <span class="file-size-badge ${this.getFileSizeClass(material.size || 0)}">${this.formatFileSize(material.size || 0)}</span> | 上传时间: ${new Date(material.uploadTime).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div class="material-actions">
+                                            <button class="btn-sm btn-success" onclick="studentDashboard.downloadCourseMaterial('${this.escapeHtml(material.tempPath)}', '${this.escapeHtml(material.name)}')">
+                                                <i class="fas fa-download"></i>下载
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="no-materials"><i class="fas fa-folder-open"></i> 暂无课程课件</div>'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📋 作业与考试安排</h4>
+                            <div class="assignments-list">
+                                ${assignments.length > 0 ? assignments.map(assignment => `
+                                    <div class="assignment-item">
+                                        <div class="assignment-info">
+                                            <h5>${assignment.title}</h5>
+                                            <div class="assignment-meta">
+                                                <span class="assignment-type-badge ${assignment.type}">
+                                                    <i class="fas fa-${assignment.type === 'assignment' ? 'edit' : 'clipboard-check'}"></i>
+                                                    ${assignment.type === 'assignment' ? '作业' : '考试'}
+                                                </span>
+                                                ${assignment.type === 'exam' ? `<span class="exam-duration"><i class="fas fa-clock"></i> ${assignment.duration || 120}分钟</span>` : ''}
+                                                <span class="assignment-score"><i class="fas fa-star"></i> ${assignment.maxScore}分</span>
+                                            </div>
+                                            <p class="assignment-deadline">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                截止时间: ${new Date(assignment.endTime).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="no-assignments"><i class="fas fa-tasks"></i> 暂无作业和考试安排</div>'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-actions">
+                            <button class="btn-primary" onclick="this.closest('.course-detail-modal-overlay').remove(); studentDashboard.enrollCourse('${course.id}')">
+                                <i class="fas fa-plus-circle"></i> 选修课程
+                            </button>
+                            <button class="btn-secondary" onclick="this.closest('.course-detail-modal-overlay').remove()">
+                                <i class="fas fa-times"></i> 关闭
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="btn-primary" onclick="studentDashboard.enrollCourse('${course.id}')">选修课程</button>
-                    <button class="btn-secondary" onclick="studentDashboard.closeCourseModal()">关闭</button>
                 </div>
             </div>
         `;
 
+        document.body.appendChild(modalOverlay);
+        
+        // 点击背景关闭
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.remove();
+            }
+        });
+
         modal.style.display = 'block';
+    }
+
+    // 处理课程课件列表
+    processCourseMaterials(courseMaterials) {
+        const materialsList = [];
+        
+        courseMaterials.forEach(cm => {
+            if (cm.files && Array.isArray(cm.files)) {
+                cm.files.forEach(fileData => {
+                    // 检查是否是新格式的文件数据（包含完整文件信息）
+                    if (typeof fileData === 'object' && fileData.name) {
+                        const extension = fileData.name.split('.').pop().toLowerCase();
+                        
+                        // 使用tempPath作为下载路径
+                        const tempPath = fileData.tempPath || fileData.blobUrl;
+                        
+                        materialsList.push({
+                            tempPath: tempPath,
+                            name: fileData.name,
+                            extension: extension,
+                            uploadTime: fileData.uploadTime || cm.uploadTime || new Date().toISOString(),
+                            size: fileData.size,
+                            type: fileData.type
+                        });
+                    } else {
+                        // 兼容旧格式
+                        const fileInfo = this.extractFileInfo(fileData);
+                        materialsList.push({
+                            ...fileInfo,
+                            uploadTime: cm.uploadTime || new Date().toISOString()
+                        });
+                    }
+                });
+            }
+        });
+        
+        return materialsList;
+    }
+
+    // 从文件路径提取文件信息
+    extractFileInfo(filePath) {
+        const fileName = filePath.split('/').pop();
+        const lastDotIndex = fileName.lastIndexOf('.');
+        const extension = lastDotIndex > -1 ? fileName.substring(lastDotIndex + 1) : '';
+        const name = lastDotIndex > -1 ? fileName.substring(0, lastDotIndex) : fileName;
+        
+        return {
+            tempPath: filePath,
+            name: fileName,
+            extension: extension.toLowerCase()
+        };
+    }
+
+    // 下载课程课件
+    downloadCourseMaterial(tempPath, fileName) {
+        try {
+            console.log('下载课程课件:', tempPath, fileName);
+            dataManager.downloadTempFile(tempPath);
+            showMessage(`正在下载课件: ${fileName}`, 'info');
+            dataManager.addLog(this.userData.id, 'download_course_material', `下载课件: ${fileName}`);
+        } catch (error) {
+            console.error('下载课件失败:', error);
+            showMessage(`下载课件失败: ${fileName}`, 'error');
+        }
+    }
+
+    // 下载考试附件
+    downloadExamAttachment(tempPath, fileName) {
+        try {
+            console.log('下载考试附件:', tempPath, fileName);
+            dataManager.downloadTempFile(tempPath);
+            showMessage(`正在下载附件: ${fileName}`, 'info');
+            dataManager.addLog(this.userData.id, 'download_exam_attachment', `下载考试附件: ${fileName}`);
+        } catch (error) {
+            console.error('下载附件失败:', error);
+            showMessage(`下载附件失败: ${fileName}`, 'error');
+        }
+    }
+
+    // 获取文件图标
+    getFileIcon(extension) {
+        const iconMap = {
+            'pdf': 'pdf',
+            'doc': 'word',
+            'docx': 'word',
+            'xls': 'excel',
+            'xlsx': 'excel',
+            'ppt': 'powerpoint',
+            'pptx': 'powerpoint',
+            'txt': 'alt',
+            'md': 'alt',
+            'jpg': 'image',
+            'jpeg': 'image',
+            'png': 'image',
+            'gif': 'image',
+            'svg': 'image',
+            'mp4': 'video',
+            'avi': 'video',
+            'mov': 'video',
+            'mp3': 'audio',
+            'wav': 'audio',
+            'zip': 'archive',
+            'rar': 'archive',
+            'cpp': 'code',
+            'java': 'code',
+            'py': 'code',
+            'js': 'code',
+            'html': 'code',
+            'css': 'code'
+        };
+        return iconMap[extension.toLowerCase()] || 'alt';
+    }
+
+    // 获取文件大小样式类
+    getFileSizeClass(size) {
+        if (size < 1024) return 'size-small';
+        if (size < 1024 * 1024) return 'size-medium';
+        return 'size-large';
+    }
+
+    // 格式化文件大小
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // HTML转义
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // 关闭课程详情模态框
@@ -794,11 +871,17 @@ class StudentDashboard {
             const myCourseCard = document.createElement('div');
             myCourseCard.className = 'my-course-card';
             
-            // 检查是否有成绩（表示课程已完成）
-            const hasGrade = this.gradesData.some(g => g.courseId === course.id);
+            // 检查是否有成绩记录（根据新的数据结构）
+            const hasGrade = this.gradesData.some(g => 
+                g.courseId === course.id && (
+                    g.studentid === this.userData.id || 
+                    g.studentId === this.userData.id ||
+                    g.username === this.userData.username
+                )
+            );
             const isCompleted = progress === 100 || hasGrade;
             
-            // 始终显示进度输入框，无论课程是否已完成
+            // 显示课程信息，不包含手动进度设置
             myCourseCard.innerHTML = `
                 <div class="course-header">
                     <h3>${course.courseName}</h3>
@@ -809,31 +892,23 @@ class StudentDashboard {
                     <p><i class="fas fa-user"></i> ${teacher ? teacher.name : '未知教师'}</p>
                     <p><i class="fas fa-credit-card"></i> ${course.credits}学分</p>
                     <p><i class="fas fa-tasks"></i> ${assignments.length}个作业</p>
-                </div>
-                <div class="progress-input-section">
-                    <label for="progress-input-${course.id}">📊 学习进度设置</label>
-                    <div class="progress-input-group">
-                        <input type="number" 
-                               id="progress-input-${course.id}" 
-                               class="progress-input" 
-                               min="0" 
-                               max="100" 
-                               value="${progress}" 
-                               placeholder="0-100"
-                               title="请输入0-100之间的数字"
-                               onkeypress="if(event.key==='Enter'){studentDashboard.updateCourseProgress('${course.id}', this.value)}"
-                               onblur="if(this.value!=='${progress}'){studentDashboard.updateCourseProgress('${course.id}', this.value)}">
-                        <span>%</span>
-                        <button class="btn-sm btn-primary" onclick="studentDashboard.updateCourseProgress('${course.id}', document.getElementById('progress-input-${course.id}').value)">✓ 更新进度</button>
-                    </div>
+                    <p><i class="fas fa-chart-line"></i> 学习进度：${progress}%</p>
                 </div>
                 <div class="course-actions">
-                    ${isCompleted ? 
-                        `<button class="btn-success" onclick="studentDashboard.showCourseDetail('${course.id}')">📋 查看详情</button>
-                         <button class="btn-secondary" onclick="studentDashboard.viewGradeDetail('${this.gradesData.find(g => g.courseId === course.id)?.id}')">📊 查看成绩</button>` :
-                        `<button class="btn-primary" onclick="studentDashboard.showCourseDetail('${course.id}')">进入学习</button>
-                         <button class="btn-secondary" onclick="studentDashboard.viewAssignments('${course.id}')">查看作业</button>`
-                    }
+                    ${(() => {
+                        const gradeRecord = this.gradesData.find(g => 
+                            g.courseId === course.id && (
+                                g.studentid === this.userData.id || 
+                                g.studentId === this.userData.id ||
+                                g.username === this.userData.username
+                            )
+                        );
+                        return isCompleted ? 
+                            `<button class="btn-success" onclick="studentDashboard.showCourseDetail('${course.id}')">📋 查看详情</button>
+                             <button class="btn-secondary" onclick="studentDashboard.viewGradeDetail('${gradeRecord?.id}')">📊 查看成绩</button>` :
+                            `<button class="btn-primary" onclick="studentDashboard.showCourseDetail('${course.id}')">进入学习</button>
+                             <button class="btn-secondary" onclick="studentDashboard.viewAssignments('${course.id}')">查看作业</button>`;
+                    })()}
                 </div>
             `;
 
@@ -1587,6 +1662,23 @@ ${submission.content || '无文字说明'}
             `学生 ${this.userData.name} 提交了作业 ${assignment.title}`);
     }
 
+    // 查看作业详情（包括未提交的情况）
+    viewAssignmentDetail(assignmentId) {
+        const assignments = dataManager.getData('assignments');
+        const item = assignments.find(item => item.id === assignmentId);
+        
+        if (!item) {
+            showMessage('未找到对应的作业或考试', 'error');
+            return;
+        }
+
+        // 获取提交记录（可能没有）
+        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignmentId);
+        const submission = submissions.length > 0 ? submissions[0] : null;
+        
+        this.showAssignmentDetailModal(item, submission);
+    }
+
     // 查看提交详情
     viewSubmission(assignmentId) {
         const submissions = dataManager.getStudentSubmissions(this.userData.id, assignmentId);
@@ -1608,6 +1700,165 @@ ${submission.content || '无文字说明'}
         }
         
         this.showSubmissionDetailModal(submission, item);
+    }
+
+    // 显示作业详情模态框（包括未提交的情况）
+    showAssignmentDetailModal(item, submission) {
+        const isExam = item.type === 'exam';
+        const hasSubmission = submission !== null;
+        
+        const modal = document.createElement('div');
+        modal.className = 'submission-detail-modal-overlay';
+        modal.innerHTML = `
+            <div class="submission-detail-modal">
+                <div class="detail-header">
+                    <h3>📄 ${isExam ? '考试' : '作业'}详情 - ${item.title}</h3>
+                    <button class="close-btn" onclick="this.closest('.submission-detail-modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="detail-content">
+                    <div class="submission-info">
+                        <div class="info-row">
+                            <label>${isExam ? '考试' : '作业'}类型：</label>
+                            <span>${isExam ? '考试' : '作业'}</span>
+                        </div>
+                        <div class="info-row">
+                            <label>发布时间：</label>
+                            <span>${new Date(item.createdTime).toLocaleString()}</span>
+                        </div>
+                        <div class="info-row">
+                            <label>截止时间：</label>
+                            <span>${new Date(item.endTime).toLocaleString()}</span>
+                        </div>
+                        ${isExam ? `
+                            <div class="info-row">
+                                <label>考试时长：</label>
+                                <span>${item.duration || 120}分钟</span>
+                            </div>
+                        ` : ''}
+                        <div class="info-row">
+                            <label>满分：</label>
+                            <span>${item.maxScore}分</span>
+                        </div>
+                        <div class="info-row">
+                            <label>提交状态：</label>
+                            <span class="status-badge ${hasSubmission ? submission.status : 'pending'}">
+                                ${hasSubmission ? this.getStatusText(submission.status) : '未提交'}
+                            </span>
+                        </div>
+                        ${hasSubmission ? `
+                            <div class="info-row">
+                                <label>提交时间：</label>
+                                <span>${new Date(submission.submittedTime).toLocaleString()}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${item.files && item.files.length > 0 ? `
+                        <div class="submission-files-section">
+                            <h4>教师附件</h4>
+                            <div class="files-list">
+                                ${item.files.map(file => `
+                                    <div class="file-item downloadable">
+                                        <i class="fas fa-paperclip"></i>
+                                        <span class="file-name" title="${this.escapeHtml(file.name)}">${this.escapeHtml(file.name)}</span>
+                                        <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
+                                        <button class="file-download-btn" onclick="event.preventDefault(); studentDashboard.downloadTeacherAttachment('${this.escapeHtml(file.tempPath)}', '${this.escapeHtml(file.name)}')" title="下载教师附件">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="submission-content-section">
+                        <h4>${isExam ? '考试说明' : '作业要求'}</h4>
+                        <div class="content-display">
+                            ${item.description || '无说明内容'}
+                        </div>
+                    </div>
+                    
+                    ${hasSubmission ? `
+                        <div class="submission-content-section">
+                            <h4>我的提交内容</h4>
+                            <div class="content-display">
+                                ${submission.content || '无文字内容'}
+                            </div>
+                        </div>
+                        
+                        ${submission.files && submission.files.length > 0 ? `
+                            <div class="submission-files-section">
+                                <h4>我的附件</h4>
+                                <div class="files-list">
+                                    ${submission.files.map(file => {
+                                        const fileName = file && (file.originalName || file.name) ? file.originalName || file.name : (typeof file === 'string' ? file : '未知文件');
+                                        
+                                        if (file && file.tempPath) {
+                                            return `
+                                                <div class="file-item downloadable">
+                                                    <i class="fas fa-file"></i>
+                                                    <span class="file-name" title="${this.escapeHtml(fileName)}">${this.escapeHtml(fileName)}</span>
+                                                    <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
+                                                    <button class="file-download-btn" onclick="event.preventDefault(); dataManager.downloadTempFile('${this.escapeHtml(file.tempPath)}')" title="下载 ${this.escapeHtml(fileName)}">
+                                                        <i class="fas fa-download"></i>
+                                                    </button>
+                                                </div>
+                                            `;
+                                        } else if (typeof file === 'string') {
+                                            return `
+                                                <div class="file-item downloadable">
+                                                    <i class="fas fa-file"></i>
+                                                    <span class="file-name" title="${this.escapeHtml(file)}">${this.escapeHtml(file)}</span>
+                                                    <span class="file-size">未知大小</span>
+                                                    <button class="file-download-btn" onclick="studentDashboard.downloadSubmissionFile('${this.escapeHtml(file)}', '${this.escapeHtml(file)}', 'string')" title="下载 ${this.escapeHtml(file)}">
+                                                        <i class="fas fa-download"></i>
+                                                    </button>
+                                                </div>
+                                            `;
+                                        } else {
+                                            return `
+                                                <div class="file-item downloadable">
+                                                    <i class="fas fa-file"></i>
+                                                    <span class="file-name" title="${this.escapeHtml(fileName)}">${this.escapeHtml(fileName)}</span>
+                                                    <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
+                                                    <span class="file-status">已上传</span>
+                                                </div>
+                                            `;
+                                        }
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    ` : ''}
+                    
+                    <div class="detail-actions">
+                        <button class="btn-secondary" onclick="this.closest('.submission-detail-modal-overlay').remove()">
+                            关闭
+                        </button>
+                        ${!hasSubmission ? `
+                            <button class="btn-primary" onclick="this.closest('.submission-detail-modal-overlay').remove(); studentDashboard.${isExam ? 'startExam' : 'submitAssignment'}('${item.id}')">
+                                <i class="fas fa-${isExam ? 'play' : 'edit'}"></i> ${isExam ? '开始考试' : '开始提交'}
+                            </button>
+                        ` : submission.status === 'pending' ? `
+                            <button class="btn-primary" onclick="this.closest('.submission-detail-modal-overlay').remove(); studentDashboard.${isExam ? 'resubmitExam' : 'resubmitAssignment'}('${item.id}')">
+                                <i class="fas fa-redo"></i> 重新提交
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
     // 显示提交详情模态框
@@ -1660,6 +1911,24 @@ ${submission.content || '无文字说明'}
                             </div>
                         ` : ''}
                     </div>
+                    
+                    ${item.files && item.files.length > 0 ? `
+                        <div class="submission-files-section">
+                            <h4>教师附件</h4>
+                            <div class="files-list">
+                                ${item.files.map(file => `
+                                    <div class="file-item downloadable">
+                                        <i class="fas fa-paperclip"></i>
+                                        <span class="file-name" title="${this.escapeHtml(file.name)}">${this.escapeHtml(file.name)}</span>
+                                        <span class="file-size">${file.size ? this.formatFileSize(file.size) : '未知大小'}</span>
+                                        <button class="file-download-btn" onclick="event.preventDefault(); studentDashboard.downloadTeacherAttachment('${this.escapeHtml(file.tempPath)}', '${this.escapeHtml(file.name)}')" title="下载教师附件">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                     
                     <div class="submission-content-section">
                         <h4>${isExam ? '考试内容' : '作业内容'}</h4>
@@ -1822,6 +2091,30 @@ ${submission.content || '无文字说明'}
                                 <strong>满分：</strong>${exam.maxScore}分
                             </div>
                         </div>
+                        
+                        ${exam.files && exam.files.length > 0 ? `
+                            <div class="exam-attachments">
+                                <h5><i class="fas fa-paperclip"></i> 教师附件</h5>
+                                <div class="exam-attachment-list">
+                                    ${exam.files.map(file => `
+                                        <div class="exam-attachment-item">
+                                            <div class="attachment-info">
+                                                <i class="fas fa-file-${this.getFileIcon(file.name.split('.').pop())}"></i>
+                                                <div>
+                                                    <h6>${this.escapeHtml(file.name)}</h6>
+                                                    <p>文件类型: <span class="file-type-badge">${file.name.split('.').pop().toUpperCase()}</span> | 文件大小: <span class="file-size-badge ${this.getFileSizeClass(file.size || 0)}">${this.formatFileSize(file.size || 0)}</span> | 上传时间: ${new Date(file.uploadTime || Date.now()).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                            <div class="attachment-actions">
+                                                <button class="btn-sm btn-primary" onclick="studentDashboard.downloadExamAttachment('${this.escapeHtml(file.tempPath || file.blobUrl)}', '${this.escapeHtml(file.name)}')">
+                                                    <i class="fas fa-download"></i> 下载
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                     
                     <div class="exam-timer" id="examTimer">
@@ -1985,6 +2278,25 @@ ${submission.content || '无文字说明'}
     // 下载临时文件
     downloadTempFile(tempPath) {
         dataManager.downloadTempFile(tempPath);
+    }
+
+    // 下载教师附件
+    downloadTeacherAttachment(tempPath, fileName) {
+        try {
+            console.log('下载教师附件:', tempPath, fileName);
+            
+            // 直接调用dataManager下载教师附件，与教师端保持一致
+            dataManager.downloadTempFile(tempPath);
+            
+            showMessage(`正在下载教师附件: ${fileName}`, 'info');
+            
+            // 记录下载日志
+            dataManager.addLog(this.userData.id, 'download_teacher_attachment', `下载教师附件: ${fileName}`);
+            
+        } catch (error) {
+            console.error('下载教师附件失败:', error);
+            showMessage(`下载教师附件失败: ${fileName}`, 'error');
+        }
     }
 
     // 下载提交的文件（参照教师端逻辑）
@@ -2575,6 +2887,7 @@ ${submission.content || '无文字说明'}
             
             <div class="assignment-content">
                 <p class="assignment-description">${assignment.description}</p>
+                
                 <div class="assignment-time-info">
                     <span class="deadline-time ${isOverdue ? 'overdue' : ''}">
                         <i class="fas fa-clock"></i>
@@ -2603,21 +2916,39 @@ ${submission.content || '无文字说明'}
             ` : ''}
 
             <div class="assignment-actions">
-                ${isGraded ? `
-                    <button class="btn-sm btn-success" onclick="studentDashboard.viewSubmission('${assignment.id}')">
+                ${!hasSubmission ? `
+                    <!-- 未提交状态：显示查看附件和开始提交按钮 -->
+                    ${assignment.files && assignment.files.length > 0 ? `
+                        <button class="btn-sm btn-info" onclick="studentDashboard.viewAssignmentDetail('${assignment.id}')">
+                            <i class="fas fa-paperclip"></i> 查看附件
+                        </button>
+                    ` : ''}
+                    <button class="btn-sm btn-primary" onclick="studentDashboard.submitAssignment('${assignment.id}')">
+                        <i class="fas fa-edit"></i> 开始提交
+                    </button>
+                ` : isGraded ? `
+                    <!-- 已批改状态：显示查看详情和查看成绩 -->
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewAssignmentDetail('${assignment.id}')">
                         <i class="fas fa-eye"></i> 查看详情
                     </button>
                     <button class="btn-sm btn-secondary" onclick="studentDashboard.viewGradeDetail('${submission.id}')">
                         <i class="fas fa-chart-line"></i> 查看成绩
                     </button>
                 ` : isSubmitted ? `
-                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${assignment.id}')">
-                        <i class="fas fa-file-alt"></i> 查看提交
+                    <!-- 已提交未批改状态：显示查看详情和重新提交 -->
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewAssignmentDetail('${assignment.id}')">
+                        <i class="fas fa-eye"></i> 查看详情
                     </button>
                     <button class="btn-sm btn-warning" onclick="studentDashboard.resubmitAssignment('${assignment.id}')">
                         <i class="fas fa-redo"></i> 重新提交
                     </button>
                 ` : isOverdue ? `
+                    <!-- 已逾期状态：显示查看附件（如果有）和逾期提示 -->
+                    ${assignment.files && assignment.files.length > 0 ? `
+                        <button class="btn-sm btn-info" onclick="studentDashboard.viewAssignmentDetail('${assignment.id}')">
+                            <i class="fas fa-paperclip"></i> 查看附件
+                        </button>
+                    ` : ''}
                     <button class="btn-sm btn-danger disabled">
                         <i class="fas fa-times-circle"></i> 已逾期
                     </button>
@@ -2944,29 +3275,43 @@ ${submission.content || '无文字说明'}
             ` : ''}
 
             <div class="assignment-actions">
-                ${isGraded ? `
-                    <button class="btn-sm btn-success" onclick="studentDashboard.viewSubmission('${exam.id}')">
+                ${!hasSubmission ? `
+                    <!-- 未提交状态：显示查看附件和开始考试按钮 -->
+                    ${exam.files && exam.files.length > 0 ? `
+                        <button class="btn-sm btn-info" onclick="studentDashboard.viewAssignmentDetail('${exam.id}')">
+                            <i class="fas fa-paperclip"></i> 查看附件
+                        </button>
+                    ` : ''}
+                    <button class="btn-sm btn-primary" onclick="studentDashboard.startExam('${exam.id}')">
+                        <i class="fas fa-play"></i> 开始考试
+                    </button>
+                ` : isGraded ? `
+                    <!-- 已批改状态：显示查看详情和查看成绩 -->
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewAssignmentDetail('${exam.id}')">
                         <i class="fas fa-eye"></i> 查看详情
                     </button>
                     <button class="btn-sm btn-secondary" onclick="studentDashboard.viewGradeDetail('${submission.id}')">
                         <i class="fas fa-chart-line"></i> 查看成绩
                     </button>
                 ` : isSubmitted ? `
-                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewSubmission('${exam.id}')">
-                        <i class="fas fa-file-alt"></i> 查看提交
+                    <!-- 已提交未批改状态：显示查看详情和重新提交 -->
+                    <button class="btn-sm btn-secondary" onclick="studentDashboard.viewAssignmentDetail('${exam.id}')">
+                        <i class="fas fa-eye"></i> 查看详情
                     </button>
                     <button class="btn-sm btn-warning" onclick="studentDashboard.resubmitExam('${exam.id}')">
                         <i class="fas fa-redo"></i> 重新提交
                     </button>
                 ` : isOverdue ? `
+                    <!-- 已逾期状态：显示查看附件（如果有）和逾期提示 -->
+                    ${exam.files && exam.files.length > 0 ? `
+                        <button class="btn-sm btn-info" onclick="studentDashboard.viewAssignmentDetail('${exam.id}')">
+                            <i class="fas fa-paperclip"></i> 查看附件
+                        </button>
+                    ` : ''}
                     <button class="btn-sm btn-danger disabled">
                         <i class="fas fa-times-circle"></i> 已逾期
                     </button>
-                ` : `
-                    <button class="btn-sm btn-primary" onclick="studentDashboard.startExam('${exam.id}')">
-                        <i class="fas fa-play"></i> 开始考试
-                    </button>
-                `}
+                ` : ''}
             </div>
         `;
 
@@ -3047,93 +3392,47 @@ ${submission.content || '无文字说明'}
 
     // 更新成绩显示
     updateGradesDisplay() {
-        const semesterSelect = document.getElementById('semesterSelect');
-        const selectedSemester = semesterSelect ? semesterSelect.value : this.getCurrentSemester();
+        // 根据新的grades数组结构过滤成绩 - 只包含当前学生的成绩
+        // 支持多种字段名匹配：studentid、studentId、username
+        const studentGrades = this.gradesData.filter(grade => 
+            grade.studentid === this.userData.id || 
+            grade.studentId === this.userData.id ||
+            grade.username === this.userData.username
+        );
         
-        // 过滤指定学期的所有成绩（不过滤进度，只要学期匹配就显示）
-        const semesterGrades = this.gradesData.filter(grade => grade.semester === selectedSemester);
-        
-        // 更新总览统计 - 显示所有该学期的成绩和预测成绩统计
+        // 更新总览统计 - 显示当前学生的所有成绩统计
         const overviewStats = document.querySelector('.overview-stats');
         if (overviewStats) {
-            // 获取当前学期的所有选课
-            const currentSemesterEnrollments = this.enrollmentsData.filter(e => {
-                const course = this.coursesData.find(c => c.id === e.courseId);
-                return course && e.status === 'active' && e.type === 'enrolled';
-            });
+            // 只统计当前学生的实际成绩
+            const actualGrades = studentGrades;
             
-            // 统计实际成绩
-            let actualGrades = semesterGrades;
-            
-            // 统计预测绩点和成绩（只针对没有实际成绩但进度100%的课程）
-            let predictedGPAs = [];
-            let predictedScores = [];
-            
-            currentSemesterEnrollments.forEach(enrollment => {
-                const course = this.coursesData.find(c => c.id === enrollment.courseId);
-                if (!course) return;
-                
-                const progress = this.calculateCourseProgress(course.id);
-                const hasActualGrade = semesterGrades.some(g => g.courseId === course.id);
-                
-                if (progress === 100 && !hasActualGrade) {
-                    // 生成预测成绩和绩点（与明细表逻辑一致）
-                    const assignments = dataManager.getCourseHomework(course.id);
-                    const completedAssignments = assignments.filter(assignment => {
-                        const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
-                        return submissions && submissions.length > 0;
-                    }).length;
-                    
-                    let score;
-                    if (assignments.length > 0 && completedAssignments === assignments.length) {
-                        // 所有作业都完成，给予较好的预测成绩 (85-100分)
-                        score = Math.random() * 15 + 85;
-                    } else if (completedAssignments > 0) {
-                        // 部分作业完成，给予中等预测成绩 (75-89分)
-                        score = Math.random() * 14 + 75;
-                    } else {
-                        // 没有作业完成，给予基础预测成绩 (60-79分)
-                        score = Math.random() * 19 + 60;
+            if (actualGrades.length > 0) {
+                // 从grades数组获取信息，需要通过courseId查找课程信息来获取学分
+                let totalCredits = 0;
+                actualGrades.forEach(grade => {
+                    const course = this.coursesData.find(c => c.id === grade.courseId);
+                    if (course) {
+                        totalCredits += course.credits;
                     }
-                    
-                    // 根据成绩等比例换算绩点 (4.5对应100分)
-                    const predictedGPA = score / 100 * 4.5;
-                    predictedGPAs.push({ gpa: predictedGPA, credits: course.credits });
-                    predictedScores.push(score);
-                }
-            });
-            
-            // 计算综合统计
-            const allGPAs = [
-                ...actualGrades.map(g => ({ gpa: g.gpa, credits: g.credits })),
-                ...predictedGPAs
-            ];
-            
-            // 计算所有成绩（实际+预测）的平均值
-            const allScores = [
-                ...actualGrades.map(g => g.totalScore),
-                ...predictedScores
-            ];
-            
-            if (currentSemesterEnrollments.length > 0) {
-                // 计算总学分（实际选课的学分）
-                const totalCredits = currentSemesterEnrollments.reduce((sum, enrollment) => {
-                    const course = this.coursesData.find(c => c.id === enrollment.courseId);
-                    return sum + (course ? course.credits : 0);
-                }, 0);
+                });
                 
-                // 计算加权平均绩点
-                const weightedGPA = allGPAs.length > 0 ? 
-                    allGPAs.reduce((sum, item) => sum + (item.gpa * item.credits), 0) / totalCredits : 0;
+                // 计算加权平均绩点（基于实际成绩，假设grades中有gpa字段）
+                let weightedGPA = 0;
+                actualGrades.forEach(grade => {
+                    const course = this.coursesData.find(c => c.id === grade.courseId);
+                    if (course && grade.gpa) {
+                        weightedGPA += grade.gpa * course.credits;
+                    }
+                });
+                weightedGPA = totalCredits > 0 ? weightedGPA / totalCredits : 0;
                 
-                // 计算平均成绩
-                const averageGrade = allScores.length > 0 ? 
-                    allScores.reduce((sum, score) => sum + score, 0) / allScores.length : 0;
+                // 计算平均成绩（基于实际成绩）
+                const averageGrade = actualGrades.reduce((sum, grade) => sum + grade.totalScore, 0) / actualGrades.length;
                 
                 overviewStats.innerHTML = `
                     <div class="stat">
                         <span class="label">平均绩点</span>
-                        <span class="value gpa">${weightedGPA > 0 ? weightedGPA.toFixed(2) : '--'}</span>
+                        <span class="value gpa">${weightedGPA.toFixed(2)}</span>
                     </div>
                     <div class="stat">
                         <span class="label">总学分</span>
@@ -3141,11 +3440,11 @@ ${submission.content || '无文字说明'}
                     </div>
                     <div class="stat">
                         <span class="label">平均成绩</span>
-                        <span class="value grade">${averageGrade > 0 ? averageGrade.toFixed(1) : '--'}</span>
+                        <span class="value grade">${averageGrade.toFixed(1)}</span>
                     </div>
                     <div class="stat">
-                        <span class="label">课程数量</span>
-                        <span class="value">${currentSemesterEnrollments.length}</span>
+                        <span class="label">已评课程</span>
+                        <span class="value">${actualGrades.length}</span>
                     </div>
                 `;
             } else {
@@ -3171,99 +3470,46 @@ ${submission.content || '无文字说明'}
             }
         }
 
-        // 更新成绩明细表
+        // 更新成绩明细表 - 只显示当前学生的成绩
         const gradeTableBody = document.getElementById('gradeTableBody');
         if (gradeTableBody) {
             gradeTableBody.innerHTML = '';
             
-            // 显示当前学期的所有选课情况
-            const enrolledCourses = this.enrollmentsData.filter(e => 
-                e.status === 'active' && e.type === 'enrolled'
-            );
-            
-            enrolledCourses.forEach(enrollment => {
-                const course = this.coursesData.find(c => c.id === enrollment.courseId);
-                if (!course) return;
-                
-                const progress = this.calculateCourseProgress(course.id);
-                const teacher = dataManager.getUserById(course.teacherId);
-                const grade = semesterGrades.find(g => g.courseId === course.id);
-                
-                const row = document.createElement('tr');
-                
-                if (grade) {
-                    // 有成绩的课程
+            // 只显示当前学生的成绩记录
+            if (studentGrades.length === 0) {
+                gradeTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-info-circle"></i> 
+                            暂无成绩数据，请等待教师评分
+                        </td>
+                    </tr>
+                `;
+            } else {
+                studentGrades.forEach(grade => {
+                    const course = this.coursesData.find(c => c.id === grade.courseId);
+                    if (!course) return;
+                    
+                    const teacher = dataManager.getUserById(course.teacherId);
+                    const row = document.createElement('tr');
+                    
+                    // 计算绩点（如果没有gpa字段，则根据totalScore计算）
+                    const gpa = grade.gpa || ((grade.totalScore / 100) * 4.5).toFixed(2);
+                    
                     row.innerHTML = `
                         <td>${course.courseCode}</td>
                         <td>${course.courseName}</td>
                         <td>${teacher ? teacher.name : '未知教师'}</td>
                         <td>${course.credits}</td>
                         <td><span class="grade-badge ${this.getGradeClass(grade.totalScore)}">${grade.totalScore}</span></td>
-                        <td>${grade.gpa}</td>
+                        <td>${gpa}</td>
                         <td>
                             <button class="btn-sm btn-secondary" onclick="studentDashboard.viewGradeDetail('${grade.id}')">查看详情</button>
                         </td>
                     `;
-                } else {
-                    // 没有成绩的课程
-                    const statusText = progress === 100 ? '已完成' : '学习中';
-                    const statusClass = progress === 100 ? 'completed' : 'progress';
-                    const statusBadge = progress === 100 ? 
-                        `<span class="grade-badge ${statusClass}">🎉 已完成 (${progress}%)</span>` :
-                        `<span class="grade-badge ${statusClass}">学习中 (${progress}%)</span>`;
                     
-                    // 如果进度为100%，生成预测绩点和对应成绩
-                    let predictedGPA = '-';
-                    let predictedScore = '-';
-                    if (progress === 100) {
-                        // 基于作业完成情况生成预测绩点
-                        const assignments = dataManager.getCourseHomework(course.id);
-                        const completedAssignments = assignments.filter(assignment => {
-                            const submissions = dataManager.getStudentSubmissions(this.userData.id, assignment.id);
-                            return submissions && submissions.length > 0;
-                        }).length;
-                        
-                        let score;
-                        if (assignments.length > 0 && completedAssignments === assignments.length) {
-                            // 所有作业都完成，给予较好的预测成绩 (85-100分)
-                            score = Math.random() * 15 + 85;
-                        } else if (completedAssignments > 0) {
-                            // 部分作业完成，给予中等预测成绩 (75-89分)
-                            score = Math.random() * 14 + 75;
-                        } else {
-                            // 没有作业完成，给予基础预测成绩 (60-79分)
-                            score = Math.random() * 19 + 60;
-                        }
-                        
-                        // 根据成绩等比例换算绩点 (4.5对应100分)
-                        predictedGPA = (score / 100 * 4.5).toFixed(2);
-                        predictedScore = Math.round(score);
-                    }
-                    
-                    const gradeDisplay = predictedScore !== '-' ? 
-                        `<span class="grade-badge ${this.getGradeClass(predictedScore)}">${predictedScore}</span>` : 
-                        statusBadge;
-                    
-                    row.innerHTML = `
-                        <td>${course.courseCode}</td>
-                        <td>${course.courseName}</td>
-                        <td>${teacher ? teacher.name : '未知教师'}</td>
-                        <td>${course.credits}</td>
-                        <td>${gradeDisplay}</td>
-                        <td>${predictedGPA}</td>
-                        <td>
-                            <span class="status ${progress === 100 ? 'completed' : 'learning'}">
-                                ${progress === 100 ? '✅ 已完成' : '📖 学习中'}
-                            </span>
-                        </td>
-                    `;
-                }
-                
-                gradeTableBody.appendChild(row);
-            });
-            
-            if (enrolledCourses.length === 0) {
-                gradeTableBody.innerHTML = '<tr><td colspan="7" class="text-center">暂无选课记录</td></tr>';
+                    gradeTableBody.appendChild(row);
+                });
             }
         }
     }
@@ -3279,8 +3525,18 @@ ${submission.content || '无文字说明'}
 
     // 查看成绩详情
     viewGradeDetail(gradeId) {
-        const grade = this.gradesData.find(g => g.id === gradeId);
+        const grade = this.gradesData.find(g => 
+            g.id === gradeId && (
+                g.studentid === this.userData.id || 
+                g.studentId === this.userData.id ||
+                g.username === this.userData.username
+            )
+        );
         if (!grade) return;
+        
+        // 获取课程信息
+        const course = this.coursesData.find(c => c.id === grade.courseId);
+        if (!course) return;
         
         // 创建成绩详情HTML
         const detailsHTML = `
@@ -3298,33 +3554,27 @@ ${submission.content || '无文字说明'}
                         </div>
                         <div class="gpa-score">
                             <span class="gpa-label">绩点</span>
-                            <span class="gpa-value">${grade.gpa}</span>
+                            <span class="gpa-value">${grade.gpa || ((grade.totalScore / 100) * 4.5).toFixed(2)}</span>
                         </div>
                     </div>
+                    ${grade.componentScores && grade.componentScores.length > 0 ? `
                     <div class="grade-breakdown">
                         <h4>📝 成绩构成</h4>
-                        <div class="breakdown-item">
-                            <span class="item-label">平时成绩</span>
-                            <span class="item-score">${grade.gradeDetails.regularScore}分</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span class="item-label">期中成绩</span>
-                            <span class="item-score">${grade.gradeDetails.midtermScore}分</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span class="item-label">期末成绩</span>
-                            <span class="item-score">${grade.gradeDetails.finalScore}分</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span class="item-label">出勤分数</span>
-                            <span class="item-score">${grade.gradeDetails.attendanceScore}分</span>
-                        </div>
+                        ${grade.componentScores.map(comp => `
+                            <div class="breakdown-item">
+                                <span class="item-label">${comp.name || comp.id}</span>
+                                <span class="item-score">${comp.score || 0}分</span>
+                            </div>
+                        `).join('')}
                     </div>
+                    ` : ''}
                     <div class="grade-info">
-                        <p><strong>课程：</strong>${grade.courseName} (${grade.courseCode})</p>
-                        <p><strong>学分：</strong>${grade.credits}</p>
-                        <p><strong>学期：</strong>${grade.semester}</p>
-                        <p><strong>成绩发布时间：</strong>${new Date(grade.gradeTime).toLocaleString()}</p>
+                        <p><strong>课程：</strong>${course.courseName} (${course.courseCode})</p>
+                        <p><strong>学分：</strong>${course.credits}</p>
+                        <p><strong>学生：</strong>${grade.name || grade.username || '未知'}</p>
+                        <p><strong>成绩发布时间：</strong>${new Date(grade.createdAt).toLocaleString()}</p>
+                        ${grade.updatedAt && grade.updatedAt !== grade.createdAt ? 
+                            `<p><strong>更新时间：</strong>${new Date(grade.updatedAt).toLocaleString()}</p>` : ''}
                     </div>
                 </div>
             </div>
@@ -3478,7 +3728,9 @@ ${submission.content || '无文字说明'}
         
         // 新发布的成绩
         const unpublishedGrades = this.gradesData.filter(grade => 
-            grade.status !== 'read' && grade.totalScore !== undefined
+            (grade.studentid === this.userData.id || grade.studentId === this.userData.id || grade.username === this.userData.username) &&
+            grade.status !== 'read' && 
+            grade.totalScore !== undefined
         );
         
         unpublishedGrades.forEach(grade => {

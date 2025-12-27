@@ -1230,141 +1230,8 @@
     justify-content: center;
 }
 
-/* 进度输入框样式 */
-.student-dashboard .progress-input-section {
-    margin: 20px 0;
-    padding: 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-}
 
-.student-dashboard .progress-input-section label {
-    display: block;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 12px;
-    font-size: 14px;
-    text-align: center;
-}
 
-.student-dashboard .progress-input-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.student-dashboard .progress-input {
-    width: 120px;
-    padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    text-align: center;
-    background: white;
-    color: #1f2937;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.student-dashboard .progress-input:focus {
-    outline: none;
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.1), 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-}
-
-.student-dashboard .progress-input:hover {
-    border-color: #a78bfa;
-}
-
-.student-dashboard .progress-input-group span {
-    font-size: 16px;
-    font-weight: 600;
-    color: #6b7280;
-    margin-right: 4px;
-}
-
-.student-dashboard .progress-input-group .btn-sm {
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(124,58,237,0.3);
-    min-width: 80px;
-}
-
-.student-dashboard .progress-input-group .btn-sm:hover {
-    background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(124,58,237,0.4);
-}
-
-.student-dashboard .progress-input-group .btn-sm:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(124,58,237,0.3);
-}
-
-/* 进度输入框成功状态动画 */
-.student-dashboard .progress-input.success {
-    border-color: #10b981 !important;
-    background-color: #f0fdf4 !important;
-    animation: pulse-success 1.5s ease-in-out;
-}
-
-@keyframes pulse-success {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}
-
-/* 进度输入框错误状态 */
-.student-dashboard .progress-input.error {
-    border-color: #ef4444 !important;
-    background-color: #fef2f2 !important;
-    animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-}
-
-/* 进度输入区域悬停效果 */
-.student-dashboard .progress-input-section:hover {
-    box-shadow: 0 4px 12px rgba(124,58,237,0.1);
-    transform: translateY(-1px);
-    transition: all 0.3s ease;
-}
-
-/* 输入框聚焦时的光晕效果 */
-.student-dashboard .progress-input:focus::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border-radius: 12px;
-    background: linear-gradient(45deg, #7c3aed, #a78bfa, #7c3aed);
-    background-size: 200% 200%;
-    animation: glow 3s ease-in-out infinite;
-    z-index: -1;
-}
-
-@keyframes glow {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-}
 
 /* 成绩详情模态框 */
 .grade-modal-overlay {
@@ -1745,20 +1612,7 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .student-dashboard .progress-input-group {
-        flex-direction: column;
-        gap: 16px;
-    }
-    
-    .student-dashboard .progress-input {
-        width: 100%;
-        max-width: 200px;
-    }
-    
-    .student-dashboard .progress-input-group .btn-sm {
-        width: 100%;
-        max-width: 200px;
-    }
+
     
     /* 考试计时器响应式 */
     .timer-display {
@@ -1829,14 +1683,16 @@
 .assignments-modal-overlay::-webkit-scrollbar,
 .submission-modal-overlay::-webkit-scrollbar,
 .submission-detail-modal-overlay::-webkit-scrollbar,
-.exam-modal-overlay::-webkit-scrollbar {
+.exam-modal-overlay::-webkit-scrollbar,
+.course-detail-modal-overlay::-webkit-scrollbar {
     width: 8px;
 }
 
 .assignments-modal-overlay::-webkit-scrollbar-track,
 .submission-modal-overlay::-webkit-scrollbar-track,
 .submission-detail-modal-overlay::-webkit-scrollbar-track,
-.exam-modal-overlay::-webkit-scrollbar-track {
+.exam-modal-overlay::-webkit-scrollbar-track,
+.course-detail-modal-overlay::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
@@ -1844,7 +1700,8 @@
 .assignments-modal-overlay::-webkit-scrollbar-thumb,
 .submission-modal-overlay::-webkit-scrollbar-thumb,
 .submission-detail-modal-overlay::-webkit-scrollbar-thumb,
-.exam-modal-overlay::-webkit-scrollbar-thumb {
+.exam-modal-overlay::-webkit-scrollbar-thumb,
+.course-detail-modal-overlay::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 4px;
     transition: background 0.3s ease;
@@ -1853,7 +1710,8 @@
 .assignments-modal-overlay::-webkit-scrollbar-thumb:hover,
 .submission-modal-overlay::-webkit-scrollbar-thumb:hover,
 .submission-detail-modal-overlay::-webkit-scrollbar-thumb:hover,
-.exam-modal-overlay::-webkit-scrollbar-thumb:hover {
+.exam-modal-overlay::-webkit-scrollbar-thumb:hover,
+.course-detail-modal-overlay::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }
 
@@ -2663,6 +2521,93 @@
     font-size: 12px;
 }
 
+/* 教师附件样式 */
+.assignment-attachments {
+    margin-top: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    border: 1px solid #0ea5e9;
+}
+
+.assignment-attachments h5 {
+    margin: 0 0 12px 0;
+    color: #0369a1;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #d1e5db;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.attachment-item:hover {
+    border-color: #0ea5e9;
+    background: #f8fdff;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+.attachment-item i {
+    color: #0ea5e9;
+    font-size: 16px;
+}
+
+.attachment-name {
+    flex: 1;
+    font-weight: 500;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-size {
+    color: #6b7280;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.attachment-download-btn {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.attachment-download-btn:hover {
+    background: linear-gradient(135deg, #0277bd 0%, #0ea5e9 100%);
+    transform: scale(1.05);
+}
+
 /* 按钮变体 */
 .btn-sm {
     padding: 6px 12px;
@@ -2720,14 +2665,16 @@
     .assignments-modal-overlay,
     .submission-modal-overlay,
     .submission-detail-modal-overlay,
-    .exam-modal-overlay {
+    .exam-modal-overlay,
+    .course-detail-modal-overlay {
         padding: 10px;
         align-items: center;
     }
     
     .assignments-modal,
     .submission-modal,
-    .submission-detail-modal {
+    .submission-detail-modal,
+    .course-detail-modal {
         margin: 0;
         max-height: 90vh;
     }
@@ -2904,6 +2851,29 @@
 }
 
 .student-dashboard .btn-danger:active {
+    transform: translateY(0);
+}
+
+.student-dashboard .btn-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.student-dashboard .btn-info:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.student-dashboard .btn-info:active {
     transform: translateY(0);
 }
 
@@ -3579,8 +3549,41 @@
         gap: 4px;
     }
     
-    .student-dashboard .assignment-actions {
+    .student-dashboard     .assignment-actions {
         justify-content: flex-start;
+    }
+    
+    .course-detail-modal {
+        margin: 0;
+        max-height: 95vh;
+    }
+    
+    .detail-content {
+        padding: 20px;
+    }
+    
+    .detail-section {
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .detail-item {
+        padding: 12px;
+    }
+    
+    .assignment-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .detail-actions {
+        flex-direction: column;
+        gap: 12px;
     }
 }
 
@@ -3606,4 +3609,456 @@
         min-width: 80px;
         text-align: center;
     }
+}
+
+/* 课程详情模态框样式 */
+.course-detail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.course-detail-modal {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    margin: 20px auto;
+    animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.detail-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 20px 20px 0 0;
+}
+
+.detail-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-header .close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.detail-header .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.detail-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.course-detail {
+    max-width: 100%;
+}
+
+.detail-section {
+    margin-bottom: 32px;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.detail-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.detail-section h4 {
+    margin: 0 0 20px 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    transform: translateY(-1px);
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-item span {
+    color: #1f2937;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.description-content {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid #3b82f6;
+}
+
+.description-content p {
+    margin: 0;
+    line-height: 1.7;
+    color: #1e40af;
+    font-size: 15px;
+}
+
+/* 课程课件样式 */
+.course-materials {
+    margin-top: 15px;
+}
+
+.assignment-item {
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #f59e0b;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+}
+
+.assignment-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+}
+
+.assignment-info h5 {
+    margin: 0 0 12px 0;
+    color: #92400e;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.assignment-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.assignment-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.assignment-type-badge.assignment {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    color: #5b21b6;
+}
+
+.assignment-type-badge.exam {
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+    color: #92400e;
+}
+
+.exam-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.assignment-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.assignment-deadline {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.no-materials, .no-assignments {
+    text-align: center;
+    padding: 32px;
+    color: #6b7280;
+    font-size: 15px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 2px dashed #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.no-materials i, .no-assignments i {
+    font-size: 32px;
+    color: #9ca3af;
+}
+
+.detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+    background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+    margin: 32px -32px -32px -32px;
+    padding: 24px 32px;
+    border-radius: 0 0 16px 16px;
+}
+
+.material-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.material-item:hover {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.material-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.material-info i {
+    font-size: 24px;
+    color: #16a34a;
+    margin-right: 15px;
+    min-width: 24px;
+}
+
+.material-info h5 {
+    margin: 0 0 5px 0;
+    color: #166534;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.material-info p {
+    margin: 0;
+    color: #15803d;
+    font-size: 13px;
+}
+
+.material-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.no-materials {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px dashed #d1d5db;
+}
+
+/* 文件类型标签 */
+.file-type-badge {
+    background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* 文件大小标签 */
+.file-size-badge {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.file-size-badge.size-small {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.file-size-badge.size-medium {
+    background: rgba(249, 115, 22, 0.1);
+    color: #ea580c;
+}
+
+.file-size-badge.size-large {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* 考试附件样式 */
+.exam-attachments {
+    margin-top: 20px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+    border-radius: 12px;
+    border: 1px solid #f59e0b;
+}
+
+.exam-attachments h5 {
+    margin: 0 0 12px 0;
+    color: #92400e;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exam-attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.exam-attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #fed7aa;
+    transition: all 0.3s ease;
+}
+
+.exam-attachment-item:hover {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.exam-attachment-item .attachment-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 12px;
+}
+
+.exam-attachment-item .attachment-info i {
+    font-size: 20px;
+    color: #f59e0b;
+    min-width: 20px;
+}
+
+.exam-attachment-item .attachment-info h6 {
+    margin: 0 0 4px 0;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.exam-attachment-item .attachment-info p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.exam-attachment-item .attachment-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.exam-attachment-item .attachment-actions .btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
 }

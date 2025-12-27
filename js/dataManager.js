@@ -1348,7 +1348,9 @@ class DataManager {
     // 获取学生成绩
     getStudentGrades(studentId, semester = null) {
         let grades = this.data.grades.filter(grade => 
-            grade.studentId === studentId
+            grade.studentId === studentId || 
+            grade.studentid === studentId ||
+            (studentId && typeof studentId === 'string' && grade.username === studentId)
         );
         
         if (semester) {
