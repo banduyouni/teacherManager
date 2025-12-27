@@ -303,36 +303,6 @@
     color: #92400e;
 }
 
-.status-badge.draft {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
-.status-badge.archived {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.status-badge.locked {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.status-badge.inactive {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
-.status-badge.warning {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.status-badge.danger {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
 .semester-info {
     margin-bottom: 16px;
 }
@@ -705,7 +675,7 @@
     .academic-admin-dashboard .programs-grid,
     .academic-admin-dashboard .semester-cards,
     .academic-admin-dashboard .classrooms-grid {
-        grid-template-columns: repeat(2, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 }
 
@@ -773,10 +743,6 @@
     }
     
     .academic-admin-dashboard .overview-cards {
-        grid-template-columns: 1fr;
-    }
-
-    .academic-admin-dashboard .programs-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -1287,153 +1253,6 @@
     margin: 0;
 }
 
-/* Dashboard polish */
-.academic-admin-dashboard #dashboard {
-    background:
-        radial-gradient(1200px 600px at 10% -10%, rgba(16,185,129,0.12), transparent 60%),
-        radial-gradient(900px 500px at 100% 0%, rgba(14,165,233,0.1), transparent 55%);
-    border-radius: 18px;
-    padding: 20px 22px 28px;
-}
-
-.academic-admin-dashboard #dashboard .content-header {
-    background: linear-gradient(135deg, #ecfdf5 0%, #eff6ff 100%);
-    border: 1px solid #e2e8f0;
-    border-radius: 18px;
-    padding: 18px 22px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-    margin-bottom: 24px;
-}
-
-.academic-admin-dashboard #dashboard .content-header h2 {
-    font-size: 26px;
-    letter-spacing: 0.3px;
-}
-
-.academic-admin-dashboard #dashboard .content-header p {
-    font-size: 15px;
-}
-
-.academic-admin-dashboard #dashboard .stats-grid {
-    gap: 22px;
-    margin: 16px 0 28px;
-}
-
-.academic-admin-dashboard #dashboard .stat-card {
-    border: 1px solid #eef2f7;
-    border-radius: 18px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.academic-admin-dashboard #dashboard .stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 45%;
-    height: 4px;
-    opacity: 0.9;
-}
-
-.academic-admin-dashboard #dashboard .stat-card.primary::after {
-    background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
-}
-
-.academic-admin-dashboard #dashboard .stat-card.success::after {
-    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-}
-
-.academic-admin-dashboard #dashboard .stat-card.warning::after {
-    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
-}
-
-.academic-admin-dashboard #dashboard .stat-card.info::after {
-    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
-}
-
-.academic-admin-dashboard #dashboard .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-}
-
-.academic-admin-dashboard #dashboard .stat-info h3 {
-    font-size: 30px;
-}
-
-.academic-admin-dashboard #dashboard .quick-actions {
-    margin: 28px 0;
-}
-
-.academic-admin-dashboard #dashboard .action-grid {
-    gap: 18px;
-}
-
-.academic-admin-dashboard #dashboard .action-card {
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    border-color: #eef2f7;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
-
-.academic-admin-dashboard #dashboard .action-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-}
-
-.academic-admin-dashboard #dashboard .todo-section,
-.academic-admin-dashboard #dashboard .recent-activities {
-    margin: 28px 0;
-}
-
-.academic-admin-dashboard #dashboard .todo-card {
-    border-radius: 14px;
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-.academic-admin-dashboard #dashboard .todo-card::after {
-    content: '';
-    position: absolute;
-    right: -30px;
-    top: -30px;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    opacity: 0.08;
-}
-
-.academic-admin-dashboard #dashboard .todo-card.urgent::after {
-    background: #ef4444;
-}
-
-.academic-admin-dashboard #dashboard .todo-card.warning::after {
-    background: #f59e0b;
-}
-
-.academic-admin-dashboard #dashboard .todo-card.normal::after {
-    background: #3b82f6;
-}
-
-.academic-admin-dashboard #dashboard .priority-badge {
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
-}
-
-.academic-admin-dashboard #dashboard .activity-timeline {
-    border: 1px solid #eef2f7;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-}
-
-.academic-admin-dashboard #dashboard .activity-item {
-    border-bottom: 1px dashed #e5e7eb;
-}
-
 /* 培养方案管理 */
 .academic-admin-dashboard .programs-container {
     background: white;
@@ -1455,323 +1274,8 @@
 
 .academic-admin-dashboard .programs-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 20px;
-}
-
-/* 学生/教师管理 */
-.academic-admin-dashboard .users-container {
-    margin: 30px 0;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-}
-
-.academic-admin-dashboard .users-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.academic-admin-dashboard .users-table-container {
-    overflow-x: auto;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-}
-
-.academic-admin-dashboard .users-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-    color: #374151;
-}
-
-.academic-admin-dashboard .users-table th,
-.academic-admin-dashboard .users-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.academic-admin-dashboard .users-table th {
-    background: #f3f4f6;
-    font-weight: 600;
-    color: #111827;
-}
-
-.academic-admin-dashboard .users-table tr:hover {
-    background: #f9fafb;
-}
-
-.academic-admin-dashboard .users-table tr:last-child td {
-    border-bottom: none;
-}
-
-.academic-admin-dashboard .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    margin-top: 20px;
-}
-
-.academic-admin-dashboard .pagination button {
-    background: white;
-    border: 1px solid #d1d5db;
-    color: #374151;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.academic-admin-dashboard .pagination button:hover:not(:disabled) {
-    background: #f3f4f6;
-    border-color: #9ca3af;
-}
-
-.academic-admin-dashboard .pagination button.active {
-    background: #7c3aed;
-    color: white;
-    border-color: #7c3aed;
-}
-
-.academic-admin-dashboard .pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* 教学管理端弹窗与表单增强 */
-.academic-admin-dashboard .modal.forgot-modal {
-    background: rgba(15, 23, 42, 0.45);
-}
-
-.academic-admin-dashboard .forgot-modal .modal-content {
-    max-width: 460px;
-    border-radius: 14px;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    overflow: hidden;
-}
-
-.academic-admin-dashboard .forgot-modal .modal-header {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.04) 100%);
-    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.academic-admin-dashboard .forgot-modal .modal-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-.academic-admin-dashboard .forgot-modal .modal-body {
-    padding: 22px 24px 24px;
-}
-
-.academic-admin-dashboard .forgot-modal .modal-actions {
-    display: flex;
-    justify-content: center;
-    padding-top: 8px;
-}
-
-.academic-admin-dashboard .modal-content input,
-.academic-admin-dashboard .modal-content select,
-.academic-admin-dashboard .modal-content textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: white;
-    font-size: 14px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.academic-admin-dashboard .modal-content input:focus,
-.academic-admin-dashboard .modal-content select:focus,
-.academic-admin-dashboard .modal-content textarea:focus {
-    outline: none;
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-}
-
-/* 班级学生管理弹窗 */
-.academic-admin-dashboard .class-students-modal .modal-content {
-    max-width: 860px;
-}
-
-.academic-admin-dashboard .modal-tabs {
-    display: flex;
-    gap: 12px;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 16px;
-}
-
-.academic-admin-dashboard .modal-tabs .tab-btn {
-    background: none;
-    border: none;
-    padding: 8px 4px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.academic-admin-dashboard .modal-tabs .tab-btn.active {
-    color: #10b981;
-    border-bottom-color: #10b981;
-}
-
-.academic-admin-dashboard .tab-panel {
-    display: none;
-}
-
-.academic-admin-dashboard .tab-panel.active {
-    display: block;
-}
-
-.academic-admin-dashboard .student-search {
-    margin-bottom: 12px;
-}
-
-.academic-admin-dashboard .student-search input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.academic-admin-dashboard .student-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.academic-admin-dashboard .student-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-}
-
-.academic-admin-dashboard .student-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.academic-admin-dashboard .student-main {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.academic-admin-dashboard .student-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.academic-admin-dashboard .student-meta {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.academic-admin-dashboard .student-sub {
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.academic-admin-dashboard .transfer-modal .modal-content {
-    max-width: 520px;
-    border-radius: 16px;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.academic-admin-dashboard .transfer-modal .modal-header {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(14, 116, 144, 0.05) 100%);
-    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.academic-admin-dashboard .transfer-modal .modal-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-.academic-admin-dashboard .modal-note {
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: transparent;
-    border: none;
-    border-bottom: none;
-    font-size: 14px;
-    color: #1f2937;
-    margin-bottom: 16px;
-    text-align: center;
-    box-shadow: none;
-}
-
-.academic-admin-dashboard .modal-note.warning {
-    background: transparent;
-    border: none;
-    color: #92400e;
-}
-
-.academic-admin-dashboard .modal-note.info {
-    background: transparent;
-    border: none;
-    color: #1e40af;
-}
-
-.academic-admin-dashboard .modal-note.success {
-    background: transparent;
-    border: none;
-    color: #065f46;
-}
-
-.academic-admin-dashboard .center-note-modal .modal-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 140px;
-}
-
-.academic-admin-dashboard .center-note-modal #actionForm {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.academic-admin-dashboard .center-note-modal .modal-note {
-    font-size: 16px;
-    line-height: 1.6;
-    font-weight: 600;
-    margin-bottom: 0;
-    max-width: 360px;
-}
-
-.academic-admin-dashboard .empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    color: #6b7280;
-    padding: 40px 0;
-    font-size: 14px;
 }
 
 /* 班级管理 */
@@ -1781,14 +1285,6 @@
     padding: 24px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     margin-bottom: 24px;
-}
-
-.academic-admin-dashboard .class-table-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    flex-wrap: wrap;
 }
 
 .academic-admin-dashboard .classes-filter {
@@ -1906,66 +1402,6 @@
     gap: 20px;
 }
 
-.classroom-card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-}
-
-.classroom-card h4 {
-    margin: 0 0 8px 0;
-    font-size: 16px;
-    color: #111827;
-}
-
-.classroom-card p {
-    margin: 4px 0;
-    color: #6b7280;
-    font-size: 13px;
-}
-
-/* 多选课程列表 */
-.multi-select-list {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    max-height: 240px;
-    overflow-y: auto;
-    background: #fff;
-}
-
-.multi-select-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    cursor: pointer;
-    font-size: 13px;
-}
-
-.multi-select-item:last-child {
-    border-bottom: none;
-}
-
-.multi-select-item:hover {
-    background: #f8fafc;
-}
-
-.multi-select-item.selected {
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-
-.multi-select-check {
-    visibility: hidden;
-    font-weight: 700;
-}
-
-.multi-select-item.selected .multi-select-check {
-    visibility: visible;
-}
-
 /* 成绩统计 */
 .grade-statistics-container {
     background: white;
@@ -2004,66 +1440,10 @@
     background: white;
     border-radius: 8px;
     display: flex;
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: center;
     color: #6b7280;
     font-size: 14px;
-    padding: 12px;
-}
-
-.grade-distribution-chart .chart-stats,
-.department-avg-chart .chart-stats {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.grade-distribution-chart .stat-card,
-.department-avg-chart .stat-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 12px 14px;
-    border-left: none;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-    background: #f8fafc;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.grade-distribution-chart .stat-card h4,
-.department-avg-chart .stat-card h4 {
-    font-size: 13px;
-    color: #6b7280;
-    margin: 0;
-}
-
-.grade-distribution-chart .stat-card .stat-value,
-.department-avg-chart .stat-card .stat-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.grade-distribution-chart .stat-card:hover,
-.department-avg-chart .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-}
-
-@media (max-width: 900px) {
-    .grade-distribution-chart .chart-stats,
-    .department-avg-chart .chart-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 640px) {
-    .grade-distribution-chart .chart-stats,
-    .department-avg-chart .chart-stats {
-        grid-template-columns: 1fr;
-    }
 }
 
 .grade-details-table {
@@ -2097,20 +1477,6 @@
 
 .grade-statistics-table tr:hover {
     background: #f9fafb;
-}
-
-.grade-statistics-table tr.grade-anomaly {
-    background: #fff7ed;
-}
-
-.grade-statistics-table tr.grade-anomaly:hover {
-    background: #fffbeb;
-}
-
-.anomaly-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
 }
 
 /* 成绩审核 */
@@ -2308,9 +1674,7 @@
 .academic-admin-dashboard .btn-secondary,
 .academic-admin-dashboard .btn-success,
 .academic-admin-dashboard .btn-danger,
-.academic-admin-dashboard .btn-info,
-.academic-admin-dashboard .btn-archive,
-.academic-admin-dashboard .btn-lock {
+.academic-admin-dashboard .btn-info {
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
@@ -2374,26 +1738,6 @@
 .academic-admin-dashboard .btn-info:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-}
-
-.academic-admin-dashboard .btn-archive {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-    color: white;
-}
-
-.academic-admin-dashboard .btn-archive:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245,158,11,0.3);
-}
-
-.academic-admin-dashboard .btn-lock {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-    color: white;
-}
-
-.academic-admin-dashboard .btn-lock:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245,158,11,0.3);
 }
 
 /* Tab样式 */

@@ -48,18 +48,6 @@
                         <span>仪表盘</span>
                     </a>
                 </li>
-                <li class="nav-item" data-page="students">
-                    <a href="#students">
-                        <i class="fas fa-user-graduate"></i>
-                        <span>学生管理</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="teachers">
-                    <a href="#teachers">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                        <span>教师管理</span>
-                    </a>
-                </li>
                 <li class="nav-item" data-page="programs">
                     <a href="#programs">
                         <i class="fas fa-graduation-cap"></i>
@@ -72,10 +60,22 @@
                         <span>班级管理</span>
                     </a>
                 </li>
+                <li class="nav-item" data-page="semesters">
+                    <a href="#semesters">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>学期管理</span>
+                    </a>
+                </li>
                 <li class="nav-item" data-page="courses">
                     <a href="#courses">
                         <i class="fas fa-book"></i>
                         <span>课程安排</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="classrooms">
+                    <a href="#classrooms">
+                        <i class="fas fa-school"></i>
+                        <span>教室管理</span>
                     </a>
                 </li>
                 <li class="nav-item" data-page="schedules">
@@ -162,6 +162,14 @@
                             <i class="fas fa-plus-circle"></i>
                             <span>创建培养方案</span>
                         </button>
+                        <button class="action-card" data-action="semester-planning">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span>学期开课计划</span>
+                        </button>
+                        <button class="action-card" data-action="classroom-scheduling">
+                            <i class="fas fa-door-open"></i>
+                            <span>教室安排</span>
+                        </button>
                         <button class="action-card" data-action="grade-audit">
                             <i class="fas fa-clipboard-check"></i>
                             <span>成绩审核</span>
@@ -189,7 +197,7 @@
                             <h4>2024年春季学期成绩审核</h4>
                             <p>还有23门课程待审核，截止日期：12月25日</p>
                             <div class="todo-footer">
-                                <button class="btn-primary" data-action="go-audit">立即处理</button>
+                                <button class="btn-primary">立即处理</button>
                             </div>
                         </div>
                         <div class="todo-card warning">
@@ -200,7 +208,7 @@
                             <h4>下学期教室安排</h4>
                             <p>计算机学院5个班级的教室待安排</p>
                             <div class="todo-footer">
-                                <button class="btn-secondary" data-action="go-courses">查看详情</button>
+                                <button class="btn-secondary">查看详情</button>
                             </div>
                         </div>
                         <div class="todo-card normal">
@@ -211,7 +219,7 @@
                             <h4>新生学号分配</h4>
                             <p>2024级新生120人待分配学号</p>
                             <div class="todo-footer">
-                                <button class="btn-secondary" data-action="go-students">开始处理</button>
+                                <button class="btn-secondary">开始处理</button>
                             </div>
                         </div>
                     </div>
@@ -245,118 +253,6 @@
                 </div>
             </section>
 
-            <!-- 学生管理页面 -->
-            <section id="students" class="page-content">
-                <div class="content-header">
-                    <h2>学生管理</h2>
-                    <div class="header-actions">
-                        <button class="btn-primary" id="createStudentBtn">
-                            <i class="fas fa-user-plus"></i>
-                            新增学生
-                        </button>
-                        <button class="btn-secondary" id="studentImportBtn">
-                            <i class="fas fa-file-import"></i>
-                            批量导入
-                        </button>
-                        <button class="btn-success" id="studentExportBtn">
-                            <i class="fas fa-file-export"></i>
-                            导出名单
-                        </button>
-                    </div>
-                </div>
-
-                <div class="users-container">
-                    <div class="users-filter">
-                        <input type="text" class="search-input" id="studentSearch" placeholder="搜索学生...">
-                        <select class="filter-select" id="studentStatusFilter">
-                            <option value="">全部状态</option>
-                            <option value="active">正常</option>
-                            <option value="locked">锁定</option>
-                        </select>
-                    </div>
-                    <div class="users-table-container">
-                        <table class="users-table">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="selectAllStudents"></th>
-                                    <th>学生ID</th>
-                                    <th>学号</th>
-                                    <th>姓名</th>
-                                    <th>班级</th>
-                                    <th>专业</th>
-                                    <th>邮箱</th>
-                                    <th>最后登录</th>
-                                    <th>状态</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="studentsTableBody">
-                                <!-- 学生数据将通过JS动态生成 -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="pagination" id="studentsPagination">
-                        <!-- 分页将通过JS动态生成 -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- 教师管理页面 -->
-            <section id="teachers" class="page-content">
-                <div class="content-header">
-                    <h2>教师管理</h2>
-                    <div class="header-actions">
-                        <button class="btn-primary" id="createTeacherBtn">
-                            <i class="fas fa-user-plus"></i>
-                            新增教师
-                        </button>
-                        <button class="btn-secondary" id="teacherImportBtn">
-                            <i class="fas fa-file-import"></i>
-                            批量导入
-                        </button>
-                        <button class="btn-success" id="teacherExportBtn">
-                            <i class="fas fa-file-export"></i>
-                            导出名单
-                        </button>
-                    </div>
-                </div>
-
-                <div class="users-container">
-                    <div class="users-filter">
-                        <input type="text" class="search-input" id="teacherSearch" placeholder="搜索教师...">
-                        <select class="filter-select" id="teacherStatusFilter">
-                            <option value="">全部状态</option>
-                            <option value="active">正常</option>
-                            <option value="locked">锁定</option>
-                        </select>
-                    </div>
-                    <div class="users-table-container">
-                        <table class="users-table">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="selectAllTeachers"></th>
-                                    <th>教师ID</th>
-                                    <th>工号</th>
-                                    <th>姓名</th>
-                                    <th>职称</th>
-                                    <th>院系</th>
-                                    <th>邮箱</th>
-                                    <th>最后登录</th>
-                                    <th>状态</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="teachersTableBody">
-                                <!-- 教师数据将通过JS动态生成 -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="pagination" id="teachersPagination">
-                        <!-- 分页将通过JS动态生成 -->
-                    </div>
-                </div>
-            </section>
-
             <!-- 培养方案页面 -->
             <section id="programs" class="page-content">
                 <div class="content-header">
@@ -365,6 +261,10 @@
                         <button class="btn-primary" id="createProgramBtn">
                             <i class="fas fa-plus"></i>
                             创建培养方案
+                        </button>
+                        <button class="btn-secondary" id="importProgramBtn">
+                            <i class="fas fa-file-import"></i>
+                            导入方案
                         </button>
                     </div>
                 </div>
@@ -439,12 +339,33 @@
                 </div>
             </section>
 
+            <!-- 学期管理页面 -->
+            <section id="semesters" class="page-content">
+                <div class="content-header">
+                    <h2>学期管理</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="createSemesterBtn">
+                            <i class="fas fa-plus"></i>
+                            创建学期
+                        </button>
+                    </div>
+                </div>
+
+                <div class="semesters-container">
+                    <div class="semester-cards" id="semesterCards">
+                        <!-- 学期卡片将通过JS动态生成 -->
+                    </div>
+                </div>
+            </section>
 
             <!-- 课程安排页面 -->
             <section id="courses" class="page-content">
                 <div class="content-header">
                     <h2>课程安排</h2>
                     <div class="header-actions">
+                        <select class="form-control" id="semesterCourseFilter">
+                            <option value="">选择学期</option>
+                        </select>
                         <button class="btn-primary" id="arrangeCourseBtn">
                             <i class="fas fa-plus"></i>
                             安排课程
@@ -478,7 +399,7 @@
                                     <th>上课时间</th>
                                     <th>教室</th>
                                     <th>选课人数</th>
-                                    <th>学期</th>
+                                    <th>状态</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
@@ -490,14 +411,43 @@
                 </div>
             </section>
 
+            <!-- 教室管理页面 -->
+            <section id="classrooms" class="page-content">
+                <div class="content-header">
+                    <h2>教室管理</h2>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="addClassroomBtn">
+                            <i class="fas fa-plus"></i>
+                            添加教室
+                        </button>
+                    </div>
+                </div>
+
+                <div class="classrooms-container">
+                    <div class="classroom-filters">
+                        <select class="filter-select" id="classroomBuildingFilter">
+                            <option value="">全部教学楼</option>
+                        </select>
+                        <select class="filter-select" id="classroomTypeFilter">
+                            <option value="">全部类型</option>
+                            <option value="lecture">讲座教室</option>
+                            <option value="lab">实验室</option>
+                            <option value="computer">机房</option>
+                        </select>
+                    </div>
+                    <div class="classrooms-grid" id="classroomsGrid">
+                        <!-- 教室列表将通过JS动态生成 -->
+                    </div>
+                </div>
+            </section>
 
             <!-- 课表管理页面 -->
             <section id="schedules" class="page-content">
                 <div class="content-header">
                     <h2>课表管理</h2>
                     <div class="header-actions">
-                        <select class="form-control" id="scheduleStudentFilter">
-                            <option value="">选择学生</option>
+                        <select class="form-control" id="scheduleClassFilter">
+                            <option value="">选择班级</option>
                         </select>
                         <select class="form-control" id="scheduleTeacherFilter">
                             <option value="">选择教师</option>
@@ -539,6 +489,9 @@
                 <div class="content-header">
                     <h2>成绩统计</h2>
                     <div class="header-actions">
+                        <select class="form-control" id="gradeSemesterFilter">
+                            <option value="">选择学期</option>
+                        </select>
                         <select class="form-control" id="gradeDepartmentFilter">
                             <option value="">选择院系</option>
                         </select>
@@ -580,7 +533,6 @@
                                     <th>优秀率</th>
                                     <th>及格率</th>
                                     <th>标准差</th>
-                                    <th>异常标记</th>
                                 </tr>
                             </thead>
                             <tbody id="gradeStatisticsBody">
@@ -596,6 +548,9 @@
                 <div class="content-header">
                     <h2>成绩审核</h2>
                     <div class="header-actions">
+                        <select class="form-control" id="auditSemesterFilter">
+                            <option value="">选择学期</option>
+                        </select>
                         <button class="btn-success" id="batchApproveBtn">
                             <i class="fas fa-check-double"></i>
                             批量通过
@@ -663,8 +618,8 @@
                                     <i class="fas fa-camera"></i>
                                 </button>
                             </div>
-                            <h3 id="profileName">李教务</h3>
-                            <p id="profileDepartment">教务处 · 教学管理员</p>
+                            <h3>李教务</h3>
+                            <p>教务处 · 教学管理员</p>
                         </div>
 
                         <div class="profile-info">
@@ -672,19 +627,19 @@
                                 <h4>基本信息</h4>
                                 <div class="info-item">
                                     <label>工号</label>
-                                    <span id="profileAdminId">A20001</span>
+                                    <span>A20001</span>
                                 </div>
                                 <div class="info-item">
                                     <label>姓名</label>
-                                    <span id="profileAdminName">李教务</span>
+                                    <span>李教务</span>
                                 </div>
                                 <div class="info-item">
                                     <label>部门</label>
-                                    <span id="profileAdminDept">教务处</span>
+                                    <span>教务处</span>
                                 </div>
                                 <div class="info-item">
                                     <label>职位</label>
-                                    <span id="profileAdminTitle">教学管理员</span>
+                                    <span>教学管理员</span>
                                 </div>
                             </div>
 
@@ -692,15 +647,15 @@
                                 <h4>联系方式</h4>
                                 <div class="info-item">
                                     <label>邮箱</label>
-                                    <span id="profileEmail">li.admin@university.edu.cn</span>
+                                    <span>li.admin@university.edu.cn</span>
                                 </div>
                                 <div class="info-item">
                                     <label>电话</label>
-                                    <span id="profilePhone">137****8765</span>
+                                    <span>137****8765</span>
                                 </div>
                                 <div class="info-item">
                                     <label>办公室</label>
-                                    <span id="profileOffice">行政楼 B201</span>
+                                    <span>行政楼 B201</span>
                                 </div>
                             </div>
 
@@ -722,8 +677,8 @@
                         </div>
 
                         <div class="profile-actions">
-                            <button class="btn-secondary" id="editProfileBtn">修改信息</button>
-                            <button class="btn-primary" id="changePasswordBtn">修改密码</button>
+                            <button class="btn-secondary">修改信息</button>
+                            <button class="btn-primary">修改密码</button>
                         </div>
                     </div>
                 </div>

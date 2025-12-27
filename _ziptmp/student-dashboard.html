@@ -60,18 +60,6 @@
                         <span>我的课程</span>
                     </a>
                 </li>
-                <li class="nav-item" data-page="assignments">
-                    <a href="#assignments">
-                        <i class="fas fa-tasks"></i>
-                        <span>作业管理</span>
-                    </a>
-                </li>
-                <li class="nav-item" data-page="exams">
-                    <a href="#exams">
-                        <i class="fas fa-clipboard-check"></i>
-                        <span>考试管理</span>
-                    </a>
-                </li>
                 <li class="nav-item" data-page="grades">
                     <a href="#grades">
                         <i class="fas fa-chart-line"></i>
@@ -215,188 +203,6 @@
                 </div>
             </section>
 
-            <!-- 作业管理页面 -->
-            <section id="assignments" class="page-content">
-                <div class="content-header">
-                    <h2>作业管理</h2>
-                    <p>查看和提交您各课程的作业</p>
-                </div>
-
-                <!-- 课程选择器 -->
-                <div class="assignment-course-selector">
-                    <label for="assignmentCourseSelect">选择课程：</label>
-                    <select id="assignmentCourseSelect" class="form-control">
-                        <option value="">请选择课程</option>
-                    </select>
-                </div>
-
-                <!-- 作业统计 -->
-                <div class="assignment-stats" id="assignmentStats" style="display: none;">
-                    <div class="stat-card">
-                        <div class="stat-icon primary">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalAssignments">0</h3>
-                            <p>总作业数</p>
-                        </div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon warning">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="pendingAssignments">0</h3>
-                            <p>待提交</p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon success">
-                            <i class="fas fa-paper-plane"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="submittedAssignments">0</h3>
-                            <p>已提交</p>
-                        </div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="stat-icon info">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="gradedAssignments">0</h3>
-                            <p>已批改</p>
-                        </div>
-                    </div>
-                    <div class="stat-card danger">
-                        <div class="stat-icon danger">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="overdueAssignments">0</h3>
-                            <p>已逾期</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 作业列表 -->
-                <div class="assignments-container" id="assignmentsContainer" style="display: none;">
-                    <div class="assignments-header">
-                        <h3 id="selectedCourseTitle">课程作业</h3>
-                        <div class="assignment-filters">
-                            <button class="filter-btn active" data-filter="all">全部</button>
-                            <button class="filter-btn" data-filter="pending">待提交</button>
-                            <button class="filter-btn" data-filter="submitted">已提交</button>
-                            <button class="filter-btn" data-filter="graded">已批改</button>
-                            <button class="filter-btn" data-filter="overdue">已逾期</button>
-                        </div>
-                    </div>
-                    <div class="assignments-grid" id="assignmentsGrid">
-                        <!-- 作业卡片将通过JS动态生成 -->
-                    </div>
-                </div>
-
-                <!-- 无作业提示 -->
-                <div class="no-assignments" id="noAssignments" style="display: none;">
-                    <div class="no-data-icon">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h3>暂无作业</h3>
-                    <p>该课程目前没有作业安排</p>
-                </div>
-            </section>
-
-            <!-- 考试管理页面 -->
-            <section id="exams" class="page-content">
-                <div class="content-header">
-                    <h2>考试管理</h2>
-                    <p>查看和提交您各课程的考试</p>
-                </div>
-
-                <!-- 课程选择器 -->
-                <div class="assignment-course-selector">
-                    <label for="examCourseSelect">选择课程：</label>
-                    <select id="examCourseSelect" class="form-control">
-                        <option value="">请选择课程</option>
-                    </select>
-                </div>
-
-                <!-- 考试统计 -->
-                <div class="assignment-stats" id="examStats" style="display: none;">
-                    <div class="stat-card">
-                        <div class="stat-icon primary">
-                            <i class="fas fa-clipboard-check"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalExams">0</h3>
-                            <p>总考试数</p>
-                        </div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon warning">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="pendingExams">0</h3>
-                            <p>待提交</p>
-                        </div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon success">
-                            <i class="fas fa-paper-plane"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="submittedExams">0</h3>
-                            <p>已提交</p>
-                        </div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="stat-icon info">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="gradedExams">0</h3>
-                            <p>已批改</p>
-                        </div>
-                    </div>
-                    <div class="stat-card danger">
-                        <div class="stat-icon danger">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="overdueExams">0</h3>
-                            <p>已逾期</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 考试列表 -->
-                <div class="assignments-container" id="examsContainer" style="display: none;">
-                    <div class="assignments-header">
-                        <h3 id="selectedExamTitle">课程考试</h3>
-                        <div class="assignment-filters">
-                            <button class="filter-btn active" data-filter="all">全部</button>
-                            <button class="filter-btn" data-filter="pending">待提交</button>
-                            <button class="filter-btn" data-filter="submitted">已提交</button>
-                            <button class="filter-btn" data-filter="graded">已批改</button>
-                            <button class="filter-btn" data-filter="overdue">已逾期</button>
-                        </div>
-                    </div>
-                    <div class="assignments-grid" id="examsGrid">
-                        <!-- 考试卡片将通过JS动态生成 -->
-                    </div>
-                </div>
-
-                <!-- 无考试提示 -->
-                <div class="no-assignments" id="noExams" style="display: none;">
-                    <div class="no-data-icon">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-                    <h3>暂无考试</h3>
-                    <p>该课程目前没有考试安排</p>
-                </div>
-            </section>
-
             <!-- 成绩中心页面 -->
             <section id="grades" class="page-content">
                 <div class="content-header">
@@ -534,6 +340,36 @@
             </div>
         </div>
     </div>
+
+    <!-- 首次登录强制修改密码 -->
+    <div id="forceChangePasswordModal" class="modal forgot-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content forgot-modal-content">
+            <div class="modal-header">
+                <h3>首次登录，请修改密码</h3>
+            </div>
+            <div class="modal-body">
+                <form id="forceChangePasswordForm">
+                    <div class="form-group">
+                        <label for="forceOldPassword">原密码</label>
+                        <input type="password" id="forceOldPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceNewPassword">新密码</label>
+                        <input type="password" id="forceNewPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forceConfirmPassword">确认新密码</label>
+                        <input type="password" id="forceConfirmPassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-primary">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 
     <!-- 消息提示 -->
     <div id="messageContainer" class="message-container"></div>

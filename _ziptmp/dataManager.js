@@ -2,213 +2,6 @@
 class DataManager {
     constructor() {
         this.initializeData();
-        this.initializeTempFiles();
-        this.restoreTempFiles();
-        
-        // 启动定期清理任务（每30分钟检查一次）
-        this.startTempFileCleanup();
-    }
-
-    // 启动临时文件定期清理
-    startTempFileCleanup() {
-        // 每30分钟清理一次过期文件
-        setInterval(() => {
-            const cleanedCount = this.cleanExpiredTempFiles();
-            if (cleanedCount > 0) {
-                console.log(`定期清理：移除了 ${cleanedCount} 个过期临时文件`);
-            }
-        }, 30 * 60 * 1000); // 30分钟
-    }
-
-    // 初始化临时文件存储
-    initializeTempFiles() {
-        this.tempFiles = new Map(); // 存储临时文件 {tempPath: fileData}
-        this.tempFileCounter = 0;
-    }
-
-    // 从localStorage恢复临时文件
-    restoreTempFiles() {
-        try {
-            const savedTempFiles = localStorage.getItem('tempFiles');
-            if (savedTempFiles) {
-                const tempFilesData = JSON.parse(savedTempFiles);
-                Object.entries(tempFilesData).forEach(([tempPath, fileData]) => {
-                    this.tempFiles.set(tempPath, fileData);
-                });
-                console.log('恢复临时文件:', this.tempFiles.size, '个');
-                
-                // 清理过期文件
-                const cleanedCount = this.cleanExpiredTempFiles();
-                if (cleanedCount > 0) {
-                    console.log(`清理了 ${cleanedCount} 个过期临时文件`);
-                }
-            }
-        } catch (error) {
-            console.warn('恢复临时文件失败:', error);
-        }
-    }
-
-    // 保存临时文件到localStorage
-    saveTempFiles() {
-        try {
-            const tempFilesData = Object.fromEntries(this.tempFiles);
-            localStorage.setItem('tempFiles', JSON.stringify(tempFilesData));
-        } catch (error) {
-            console.warn('保存临时文件失败:', error);
-        }
-    }
-
-    // 生成临时文件路径
-    generateTempPath(originalFileName) {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        const extension = originalFileName.split('.').pop();
-        return `temp_${timestamp}_${random}.${extension}`;
-    }
-
-    // 存储文件到临时路径
-    storeTempFile(file, tempPath) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileData = {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    data: e.target.result, // base64数据
-                    originalPath: tempPath,
-                    uploadTime: new Date().toISOString()
-                };
-                this.tempFiles.set(tempPath, fileData);
-                // 保存到localStorage
-                this.saveTempFiles();
-                resolve(tempPath);
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // 存储文件数据到临时路径（直接存储，用于重新创建文件）
-    storeTempFileData(tempPath, fileData, originalName) {
-        const data = {
-            name: originalName || `file_${tempPath.split('.').pop()}`,
-            size: 0,
-            type: 'application/octet-stream',
-            data: fileData,
-            originalPath: tempPath,
-            uploadTime: new Date().toISOString()
-        };
-        this.tempFiles.set(tempPath, data);
-        this.saveTempFiles();
-    }
-
-    // 批量存储文件到临时路径
-    async storeTempFiles(files) {
-        const tempPaths = [];
-        for (const file of files) {
-            const tempPath = this.generateTempPath(file.name);
-            await this.storeTempFile(file, tempPath);
-            tempPaths.push(tempPath);
-        }
-        return tempPaths;
-    }
-
-    // 根据临时路径获取文件数据
-    getTempFile(tempPath) {
-        return this.tempFiles.get(tempPath);
-    }
-
-    // 下载临时文件
-    downloadTempFile(tempPath) {
-        const fileData = this.tempFiles.get(tempPath);
-        if (!fileData) {
-            console.error('文件不存在:', tempPath);
-            return;
-        }
-
-        try {
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.href = fileData.data;
-            link.download = fileData.name || `download_${Date.now()}`;
-            
-            // 设置下载属性
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            
-            // 触发下载
-            link.click();
-            
-            // 清理
-            document.body.removeChild(link);
-            
-            console.log('文件下载成功:', fileData.name);
-        } catch (error) {
-            console.error('下载失败:', error);
-            throw new Error('文件下载失败: ' + error.message);
-        }
-    }
-
-    // 删除临时文件
-    removeTempFile(tempPath) {
-        this.tempFiles.delete(tempPath);
-        this.saveTempFiles();
-    }
-
-    // 清理所有临时文件
-    clearTempFiles() {
-        this.tempFiles.clear();
-        this.saveTempFiles();
-    }
-
-    // 清理过期的临时文件（默认7天有效期）
-    cleanExpiredTempFiles(maxAgeDays = 7) {
-        const now = new Date();
-        const maxAge = maxAgeDays * 24 * 60 * 60 * 1000; // 转换为毫秒
-        
-        let cleanedCount = 0;
-        const expiredFiles = [];
-        
-        this.tempFiles.forEach((fileData, tempPath) => {
-            if (fileData.uploadTime) {
-                const uploadTime = new Date(fileData.uploadTime);
-                const age = now - uploadTime;
-                
-                if (age > maxAge) {
-                    expiredFiles.push(tempPath);
-                }
-            } else {
-                // 如果没有上传时间，默认认为过期
-                expiredFiles.push(tempPath);
-            }
-        });
-        
-        // 删除过期文件
-        expiredFiles.forEach(tempPath => {
-            this.tempFiles.delete(tempPath);
-            cleanedCount++;
-        });
-        
-        if (cleanedCount > 0) {
-            this.saveTempFiles();
-            console.log(`清理了 ${cleanedCount} 个过期临时文件`);
-        }
-        
-        return cleanedCount;
-    }
-
-    // 获取临时文件信息
-    getTempFileInfo(tempPath) {
-        const fileData = this.tempFiles.get(tempPath);
-        if (!fileData) return null;
-        
-        return {
-            name: fileData.name,
-            size: fileData.size,
-            type: fileData.type,
-            uploadTime: fileData.uploadTime,
-            tempPath: tempPath
-        };
     }
 
     // 初始化数据
@@ -230,8 +23,8 @@ class DataManager {
                 {
                     id: 'sysadmin',
                     username: 'admin',
-                    password: this.hashPassword('admin123', 'sysadmin'),
-                    salt: 'sysadmin',
+                    password: this.hashPassword('admin123', 'admin'),
+                    salt: 'admin',
                     name: '系统管理员',
                     userType: 'systemAdmin',
                     email: 'admin@system.com',
@@ -243,8 +36,8 @@ class DataManager {
                 {
                     id: 's001',
                     username: 'student',
-                    password: this.hashPassword('student123', 'student1'),
-                    salt: 'student1',
+                    password: this.hashPassword('student123', 'student'),
+                    salt: 'student',
                     name: '张三',
                     userType: 'student',
                     email: 'zhangsan@university.edu.cn',
@@ -258,8 +51,8 @@ class DataManager {
                 {
                     id: 's002',
                     username: '2021001002',
-                    password: this.hashPassword('123456', 'student2'),
-                    salt: 'student2',
+                    password: this.hashPassword('123456', '2021001002'),
+                    salt: '2021001002',
                     name: '李四',
                     userType: 'student',
                     email: 'lisi@university.edu.cn',
@@ -273,8 +66,8 @@ class DataManager {
                 {
                     id: 's003',
                     username: '2021001003',
-                    password: this.hashPassword('123456', 'student3'),
-                    salt: 'student3',
+                    password: this.hashPassword('123456', '2021001003'),
+                    salt: '2021001003',
                     name: '王五',
                     userType: 'student',
                     email: 'wangwu@university.edu.cn',
@@ -289,8 +82,8 @@ class DataManager {
                 {
                     id: 't001',
                     username: 'teacher',
-                    password: this.hashPassword('teacher123', 'teacher1'),
-                    salt: 'teacher1',
+                    password: this.hashPassword('teacher123', 'teacher'),
+                    salt: 'teacher',
                     name: '王教授',
                     userType: 'teacher',
                     email: 'wang@university.edu.cn',
@@ -304,8 +97,8 @@ class DataManager {
                 {
                     id: 't002',
                     username: 'teacher002',
-                    password: this.hashPassword('123456', 'teacher2'),
-                    salt: 'teacher2',
+                    password: this.hashPassword('123456', 'teacher002'),
+                    salt: 'teacher002',
                     name: '李教授',
                     userType: 'teacher',
                     email: 'li@university.edu.cn',
@@ -319,8 +112,8 @@ class DataManager {
                 {
                     id: 't003',
                     username: 'teacher003',
-                    password: this.hashPassword('123456', 'teacher3'),
-                    salt: 'teacher3',
+                    password: this.hashPassword('123456', 'teacher003'),
+                    salt: 'teacher003',
                     name: '张教授',
                     userType: 'teacher',
                     email: 'zhang@university.edu.cn',
@@ -335,8 +128,8 @@ class DataManager {
                 {
                     id: 'a001',
                     username: 'academic',
-                    password: this.hashPassword('academic123', 'admin1'),
-                    salt: 'admin1',
+                    password: this.hashPassword('academic123', 'academic'),
+                    salt: 'academic',
                     name: '李教务',
                     userType: 'academicAdmin',
                     email: 'li.admin@university.edu.cn',
@@ -349,8 +142,8 @@ class DataManager {
                 {
                     id: 'sys001',
                     username: 'sysadmin',
-                    password: this.hashPassword('admin123', 'sys001'),
-                    salt: 'sys001',
+                    password: this.hashPassword('admin123', 'sysadmin'),
+                    salt: 'sysadmin',
                     name: '张系统',
                     userType: 'systemAdmin',
                     email: 'zhang.admin@university.edu.cn',
@@ -422,7 +215,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '本课程深入讲解数据结构的基本概念、算法设计与分析方法。内容包括线性表、栈、队列、树、图等基本数据结构，以及排序、搜索等核心算法。通过理论学习和实践编程，培养学生分析和解决复杂问题的能力。',
                     maxStudents: 50,
-                    currentStudents: 3,
+                    currentStudents: 38,
                     category: 'required',
                     status: 'published',
                     createdAt: '2024-01-15T08:00:00Z',
@@ -452,7 +245,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习操作系统的基本原理和实现技术。包括进程管理、内存管理、文件系统、设备管理等核心概念。通过实际项目，学生将理解操作系统设计的复杂性，并能进行简单的系统级编程。',
                     maxStudents: 45,
-                    currentStudents: 1,
+                    currentStudents: 28,
                     category: 'required',
                     status: 'published',
                     createdAt: '2024-01-12T10:30:00Z',
@@ -467,7 +260,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习数据库系统的基本原理和设计方法。内容包括关系模型、SQL语言、数据库设计、事务处理、并发控制等。通过实际案例，学生将掌握数据库应用系统的设计和开发能力。',
                     maxStudents: 40,
-                    currentStudents: 2,
+                    currentStudents: 25,
                     category: 'elective',
                     status: 'published',
                     createdAt: '2024-01-08T13:15:00Z',
@@ -482,7 +275,7 @@ class DataManager {
                     departmentId: 'd001',
                     description: '学习算法设计的基本方法和分析技术。涵盖贪心算法、动态规划、分治策略、图算法等经典算法。通过大量编程练习，培养学生设计高效算法和分析算法性能的能力。',
                     maxStudents: 35,
-                    currentStudents: 1,
+                    currentStudents: 20,
                     category: 'elective',
                     status: 'published',
                     createdAt: '2024-01-05T14:00:00Z',
@@ -578,7 +371,6 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course001',
                     maxScore: 100,
-                    files: [],
                     startTime: '2024-02-01T00:00:00Z',
                     endTime: '2024-02-15T23:59:59Z',
                     createdAt: '2024-01-28T10:00:00Z',
@@ -591,7 +383,6 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course001',
                     maxScore: 100,
-                    files: [],
                     startTime: '2024-02-16T00:00:00Z',
                     endTime: '2024-03-01T23:59:59Z',
                     createdAt: '2024-02-10T14:30:00Z',
@@ -604,7 +395,6 @@ class DataManager {
                     type: 'exam',
                     courseId: 'course001',
                     maxScore: 150,
-                    files: [],
                     startTime: '2024-03-15T09:00:00Z',
                     endTime: '2024-03-15T11:30:00Z',
                     createdAt: '2024-02-20T16:00:00Z',
@@ -617,7 +407,6 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course002',
                     maxScore: 100,
-                    files: [],
                     startTime: '2024-02-05T00:00:00Z',
                     endTime: '2024-02-20T23:59:59Z',
                     createdAt: '2024-02-01T11:00:00Z',
@@ -630,7 +419,6 @@ class DataManager {
                     type: 'assignment',
                     courseId: 'course004',
                     maxScore: 100,
-                    files: [],
                     startTime: '2024-02-10T00:00:00Z',
                     endTime: '2024-02-25T23:59:59Z',
                     createdAt: '2024-02-05T15:30:00Z',
@@ -642,13 +430,9 @@ class DataManager {
                     id: 'sub001',
                     assignmentId: 'assign001',
                     studentId: 's001',
-                    submittedTime: '2025-02-12T14:30:00Z',
+                    submittedTime: '2024-02-12T14:30:00Z',
                     content: '线性表作业完成，包含完整的代码和测试用例。',
-                    files: [
-                        {blobUrl: 'linkedlist.cpp', name: 'linkedlist.cpp', size: 1024},
-                        {blobUrl: 'testlist.cpp', name: 'testlist.cpp', size: 2048},
-                        {blobUrl: 'README.md', name: 'README.md', size: 512}
-                    ],
+                    files: ['linkedlist.cpp', 'testlist.cpp', 'README.md'],
                     status: 'graded',
                     score: 92,
                     feedback: '代码结构清晰，逻辑正确，测试用例完善。',
@@ -660,10 +444,7 @@ class DataManager {
                     studentId: 's002',
                     submittedTime: '2024-02-13T16:45:00Z',
                     content: '完成了顺序表和链表的实现，代码运行正常。',
-                    files: [
-                        {blobUrl: 'seqlist.c', name: 'seqlist.c', size: 1536},
-                        {blobUrl: 'linkedlist.c', name: 'linkedlist.c', size: 2560}
-                    ],
+                    files: ['seqlist.c', 'linkedlist.c'],
                     status: 'graded',
                     score: 85,
                     feedback: '实现基本正确，建议优化代码注释和错误处理。',
@@ -675,10 +456,7 @@ class DataManager {
                     studentId: 's003',
                     submittedTime: '2024-02-14T20:15:00Z',
                     content: '线性表作业实现，包含所有要求的功能。',
-                    files: [
-                        {blobUrl: 'list.cpp', name: 'list.cpp', size: 1792},
-                        {blobUrl: 'main.cpp', name: 'main.cpp', size: 1024}
-                    ],
+                    files: ['list.cpp', 'main.cpp'],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -690,10 +468,7 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2024-02-25T18:20:00Z',
                     content: '二叉树遍历实现完成，包含递归和非递归版本。',
-                    files: [
-                        {blobUrl: 'tree.cpp', name: 'tree.cpp', size: 2304},
-                        {blobUrl: 'traversal.cpp', name: 'traversal.cpp', size: 1280}
-                    ],
+                    files: ['tree.cpp', 'traversal.cpp'],
                     status: 'pending',
                     score: null,
                     feedback: null,
@@ -705,121 +480,14 @@ class DataManager {
                     studentId: 's001',
                     submittedTime: '2024-02-18T22:30:00Z',
                     content: 'Socket编程作业，实现了客户端服务器聊天程序。',
-                    files: [
-                        {blobUrl: 'client.c', name: 'client.c', size: 2048},
-                        {blobUrl: 'server.c', name: 'server.c', size: 3072},
-                        {blobUrl: 'protocol.h', name: 'protocol.h', size: 512}
-                    ],
+                    files: ['client.c', 'server.c', 'protocol.h'],
                     status: 'graded',
                     score: 88,
                     feedback: '功能实现完整，网络协议设计合理。',
                     gradedTime: '2024-02-20T09:00:00Z'
-                },
-                {
-                    id: 'sub006',
-                    assignmentId: 'assign002',
-                    studentId: 's002',
-                    submittedTime: '2024-02-26T19:45:00Z',
-                    content: '二叉树遍历作业，完成了所有要求的遍历方式。',
-                    files: [
-                        {blobUrl: 'binarytree.cpp', name: 'binarytree.cpp', size: 2560},
-                        {blobUrl: 'traversal.cpp', name: 'traversal.cpp', size: 1536},
-                        {blobUrl: 'test.cpp', name: 'test.cpp', size: 1024}
-                    ],
-                    status: 'pending',
-                    score: null,
-                    feedback: null,
-                    gradedTime: null
-                },
-                {
-                    id: 'sub007',
-                    assignmentId: 'assign003',
-                    studentId: 's001',
-                    submittedTime: '2024-03-15T11:00:00Z',
-                    content: '期中考试答卷，完成了所有题目。',
-                    files: [
-                        {blobUrl: 'exam.pdf', name: 'exam.pdf', size: 5120},
-                        {blobUrl: 'answers.pdf', name: 'answers.pdf', size: 3072}
-                    ],
-                    status: 'pending',
-                    score: null,
-                    feedback: null,
-                    gradedTime: null
-                },
-                {
-                    id: 'sub008',
-                    assignmentId: 'assign003',
-                    studentId: 's002',
-                    submittedTime: '2024-03-15T10:45:00Z',
-                    content: '期中考试答卷，大部分题目完成。',
-                    files: [
-                        {blobUrl: 'exam_answers.pdf', name: 'exam_answers.pdf', size: 4096}
-                    ],
-                    status: 'pending',
-                    score: null,
-                    feedback: null,
-                    gradedTime: null
                 }
-            ],
-            coursePics: [],
-            courseMaterials: [
-                { id: 'courseMaterial001' , courseId: 'course001' , files: [
-                    {blobUrl: 'files/file1.cpp', name: 'file1.cpp', size: 2048},
-                    {blobUrl: 'files/testList.cpp', name: 'testList.cpp', size: 1536}
-                ] },
-                { id: 'courseMaterial002' , courseId: 'course004' , files: [
-                    {blobUrl: 'files/db.cpp', name: 'db.cpp', size: 3072},
-                    {blobUrl: 'files/ER_Relationships.png', name: 'ER_Relationships.png', size: 4096}
-                ] }
             ],
             grades: [],
-            courseGradeComponents: [{
-                courseId: 'course001',
-                components: [
-                    { name: '平时', weight: 0.3 },
-                    { name: '期中', weight: 0.4 },
-                    { name: '期末', weight: 0.3 }
-                ]
-                },
-                {
-                courseId: 'course004',
-                components: [
-                    { name: '平时', weight: 0.3 },
-                    { name: '期中', weight: 0.4 },
-                    { name: '期末', weight: 0.3 },
-                    { name: '作业', weight: 0.1 }
-                ]
-                },{
-                courseId: 'course006',
-                components: [
-                    { name: '平时', weight: 0.3 },
-                    { name: '期中', weight: 0.4 },
-                    { name: '期末', weight: 0.3 }
-                ]
-                }
-            ],
-            programs: [],
-            semesters: [
-                {
-                    id: '2024-1',
-                    name: '2024年春季学期',
-                    startDate: '2024-02-26',
-                    endDate: '2024-07-15',
-                    status: 'active'
-                },
-                {
-                    id: '2023-2',
-                    name: '2023年秋季学期',
-                    startDate: '2023-09-01',
-                    endDate: '2024-01-20',
-                    status: 'completed'
-                }
-            ],
-            classrooms: [
-                { id: 'room-101', building: '主楼', roomNumber: '101', capacity: 80, type: 'lecture' },
-                { id: 'room-205', building: '实验楼', roomNumber: '205', capacity: 40, type: 'lab' }
-            ],
-            schedules: [],
             materials: [],
             logs: [],
             backups: [],
@@ -829,7 +497,6 @@ class DataManager {
                 adminEmail: 'admin@university.edu.cn',
                 maxLoginAttempts: 5,
                 sessionTimeout: 120,
-                freezeDuration: 30,
                 passwordPolicy: {
                     minLength: 6,
                     requireUppercase: false,
@@ -886,12 +553,6 @@ class DataManager {
         if (!this.data.assignments) this.data.assignments = [];
         if (!this.data.submissions) this.data.submissions = [];
         if (!this.data.grades) this.data.grades = [];
-        if (!this.data.courseGradeComponents) this.data.courseGradeComponents = [];
-        if (!this.data.gradeStructures) this.data.gradeStructures = {};
-        if (!this.data.programs) this.data.programs = [];
-        if (!this.data.semesters) this.data.semesters = [];
-        if (!this.data.classrooms) this.data.classrooms = [];
-        if (!this.data.schedules) this.data.schedules = [];
         if (!this.data.departments) this.data.departments = [];
         if (!this.data.classes) this.data.classes = [];
         if (!this.data.materials) this.data.materials = [];
@@ -904,7 +565,6 @@ class DataManager {
                 adminEmail: 'admin@university.edu.cn',
                 maxLoginAttempts: 5,
                 sessionTimeout: 120,
-                freezeDuration: 30,
                 passwordPolicy: {
                     minLength: 6,
                     requireUppercase: false,
@@ -912,10 +572,6 @@ class DataManager {
                     requireSpecialChars: false
                 }
             };
-        }
-
-        if (typeof this.data.settings.freezeDuration === 'undefined') {
-            this.data.settings.freezeDuration = this.data.settings.sessionTimeout || 30;
         }
         
         // 为现有用户添加缺失字段
@@ -930,15 +586,6 @@ class DataManager {
             // 盐值策略：用户名作为盐值（兼容旧数据）
             if (!user.salt) user.salt = user.username;
             user.saltVersion = (user.salt === user.username) ? 'username' : (user.saltVersion || 'legacy');
-
-            // 兼容旧默认密码：123456 -> 用户名123
-            const legacyDefaultHash = this.hashPassword('123456', user.username);
-            if (user.password === legacyDefaultHash) {
-                user.password = this.hashPassword(`${user.username}123`, user.username);
-                user.salt = user.username;
-                user.saltVersion = 'username';
-                user.requirePasswordChange = false;
-            }
         });
         
         // 为现有选课记录添加type字段
@@ -946,190 +593,8 @@ class DataManager {
             if (!enrollment.type) enrollment.type = 'enrolled'; // 默认为正式选修
         });
         
-        // 为现有作业添加teacherId字段（如果缺失）
-        this.data.assignments.forEach(assignment => {
-            if (!assignment.teacherId && assignment.courseId) {
-                // 通过courseId查找课程，然后获取teacherId
-                const course = this.data.courses.find(c => c.id === assignment.courseId);
-                if (course && course.teacherId) {
-                    assignment.teacherId = course.teacherId;
-                }
-            }
-        });
-
-        // 兼容旧版课程内 gradingScheme 字段 -> 迁移到 courseGradeComponents
-        this.data.courses.forEach(course => {
-            if (course.gradingScheme && Array.isArray(course.gradingScheme)) {
-                const existing = this.data.courseGradeComponents.find(p => p.courseId === course.id);
-                if (!existing) {
-                    this.data.courseGradeComponents.push({ courseId: course.id, components: course.gradingScheme.map(s => ({ id: s.id || ('c' + Math.random().toString(36).slice(2,8)), name: s.name || s.title || '项', weight: s.weight || (s.percent? s.percent : 0) })) });
-                }
-            }
-        });
-
-        // 确保每个 courseGradeComponents 的 component 有 id；并尝试将 grades 中的 componentScores 映射到这些 id
-        if (Array.isArray(this.data.courseGradeComponents)) {
-            this.data.courseGradeComponents.forEach(cg => {
-                if (!cg.components || !Array.isArray(cg.components)) cg.components = [];
-                // 给缺失 id 的组件补 id
-                cg.components.forEach(comp => {
-                    if (!comp.id) comp.id = 'c' + Math.random().toString(36).slice(2,8);
-                });
-
-                // 映射已有 grades 的 componentScores（如果有缺失 id，按 name 匹配或生成新 id）
-                if (Array.isArray(this.data.grades)) {
-                    this.data.grades.forEach(g => {
-                        if (g.courseId !== cg.courseId) return;
-                        if (!g.componentScores || !Array.isArray(g.componentScores)) return;
-                        g.componentScores = g.componentScores.map(cs => {
-                            // 如果已有 id，保留
-                            if (cs && cs.id) return { id: cs.id, score: cs.score };
-                            // 尝试通过 name 字段匹配
-                            const name = cs && (cs.name || cs.title);
-                            let matched = null;
-                            if (name) matched = cg.components.find(c => c.name === name);
-                            if (matched) return { id: matched.id, score: cs.score };
-                            // 否则创建新 id 并保留原 name（以便日后人工核对）
-                            const newId = 'c' + Math.random().toString(36).slice(2,8);
-                            return { id: newId, score: cs.score, name: name };
-                        });
-
-                        // 重新计算总分
-                        const compMap = {};
-                        g.componentScores.forEach(cs => { compMap[cs.id] = cs.score; });
-                        let newTotal = 0;
-                        cg.components.forEach(comp => {
-                            const sc = compMap[comp.id] != null ? parseFloat(compMap[comp.id]) : 0;
-                            newTotal += sc * (comp.weight || 0); // comp.weight已经是小数形式，直接使用
-                        });
-                        g.totalScore = Math.round(newTotal * 100) / 100;
-                    });
-                }
-            });
-        }
-        
-        // 确保数据一致性
-        this.ensureDataConsistency();
-        
         console.log('数据兼容性检查完成');
         this.saveData();
-    }
-
-    // 确保数据一致性
-    ensureDataConsistency() {
-        // 1. 更新课程的当前学生数（基于活跃的选课记录）
-        this.data.courses.forEach(course => {
-            const actualStudentCount = this.data.enrollments.filter(enrollment => 
-                enrollment.courseId === course.id && enrollment.status === 'active'
-            ).length;
-            
-            if (course.currentStudents !== actualStudentCount) {
-                console.log(`修正课程 ${course.courseName} 的学生数：${course.currentStudents} -> ${actualStudentCount}`);
-                course.currentStudents = actualStudentCount;
-            }
-        });
-        
-        // 2. 验证选课记录中的学生ID和课程ID是否存在
-        this.data.enrollments = this.data.enrollments.filter(enrollment => {
-            const studentExists = this.data.users.some(user => 
-                user.id === enrollment.studentId && user.userType === 'student'
-            );
-            const courseExists = this.data.courses.some(course => 
-                course.id === enrollment.courseId
-            );
-            
-            if (!studentExists) {
-                console.warn(`删除无效选课记录：学生 ${enrollment.studentId} 不存在`);
-                return false;
-            }
-            if (!courseExists) {
-                console.warn(`删除无效选课记录：课程 ${enrollment.courseId} 不存在`);
-                return false;
-            }
-            return true;
-        });
-        
-        // 3. 验证作业记录中的课程ID是否存在
-        this.data.assignments.forEach(assignment => {
-            const courseExists = this.data.courses.some(course => course.id === assignment.courseId);
-            if (!courseExists) {
-                console.warn(`作业 ${assignment.id} 引用的课程 ${assignment.courseId} 不存在`);
-            }
-        });
-        
-        // 4. 验证提交记录中的学生ID和作业ID是否存在
-        this.data.submissions = this.data.submissions.filter(submission => {
-            const studentExists = this.data.users.some(user => 
-                user.id === submission.studentId && user.userType === 'student'
-            );
-            const assignmentExists = this.data.assignments.some(assignment => 
-                assignment.id === submission.assignmentId
-            );
-            
-            if (!studentExists) {
-                console.warn(`删除无效提交记录：学生 ${submission.studentId} 不存在`);
-                return false;
-            }
-            if (!assignmentExists) {
-                console.warn(`删除无效提交记录：作业 ${submission.assignmentId} 不存在`);
-                return false;
-            }
-            return true;
-        });
-        
-        // 5. 验证成绩记录中的学生ID和课程ID是否存在
-        this.data.grades = this.data.grades.filter(grade => {
-            const studentExists = this.data.users.some(user => 
-                user.id === grade.studentId && user.userType === 'student'
-            );
-            const courseExists = this.data.courses.some(course => course.id === grade.courseId);
-            
-            if (!studentExists) {
-                console.warn(`删除无效成绩记录：学生 ${grade.studentId} 不存在`);
-                return false;
-            }
-            if (!courseExists) {
-                console.warn(`删除无效成绩记录：课程 ${grade.courseId} 不存在`);
-                return false;
-            }
-            return true;
-        });
-        
-        // 6. 验证教师分配的合理性
-        this.data.courses.forEach(course => {
-            if (course.teacherId) {
-                const teacherExists = this.data.users.some(user => 
-                    user.id === course.teacherId && user.userType === 'teacher'
-                );
-                if (!teacherExists) {
-                    console.warn(`课程 ${course.courseName} 的教师 ${course.teacherId} 不存在`);
-                }
-            }
-        });
-        
-        // 7. 验证院系分配的合理性
-        this.data.courses.forEach(course => {
-            if (course.departmentId) {
-                const departmentExists = this.data.departments.some(department => 
-                    department.id === course.departmentId
-                );
-                if (!departmentExists) {
-                    console.warn(`课程 ${course.courseName} 的院系 ${course.departmentId} 不存在`);
-                }
-            }
-        });
-        
-        // 8. 验证班级分配的合理性
-        this.data.users.forEach(user => {
-            if (user.userType === 'student' && user.classId) {
-                const classExists = this.data.classes.some(cls => cls.id === user.classId);
-                if (!classExists) {
-                    console.warn(`学生 ${user.name} 的班级 ${user.classId} 不存在`);
-                }
-            }
-        });
-        
-        console.log('数据一致性检查完成');
     }
 
     // 保存数据到本地存储
@@ -1167,16 +632,159 @@ class DataManager {
     }
 
     // 更新用户密码
-    updateUserPassword(userId, password, salt) {
+    updateUserPassword(userId, password, salt = null, options = {}) {
         const userIndex = this.data.users.findIndex(user => user.id === userId);
         if (userIndex !== -1) {
+            const user = this.data.users[userIndex];
+            const finalSalt = salt || user.username;
             this.data.users[userIndex].password = password;
-            this.data.users[userIndex].salt = salt;
-            this.data.users[userIndex].requirePasswordChange = false;
+            this.data.users[userIndex].salt = finalSalt;
+            this.data.users[userIndex].saltVersion = (finalSalt === user.username) ? 'username' : (user.saltVersion || 'legacy');
+            if (typeof options.requirePasswordChange === 'boolean') {
+                this.data.users[userIndex].requirePasswordChange = options.requirePasswordChange;
+            } else {
+                // 默认：修改密码后不再强制修改
+                this.data.users[userIndex].requirePasswordChange = false;
+            }
             this.saveData();
             return true;
         }
         return false;
+    }
+
+    // 更新登录失败次数/锁定时间
+    updateUserLoginSecurity(userId, { failedLoginCount = null, lockedUntil = null, lastLoginAt = null } = {}) {
+        const userIndex = this.data.users.findIndex(u => u.id === userId);
+        if (userIndex === -1) return false;
+        const user = this.data.users[userIndex];
+        if (failedLoginCount !== null) user.failedLoginCount = failedLoginCount;
+        if (lockedUntil !== null) user.lockedUntil = lockedUntil;
+        if (lastLoginAt !== null) user.lastLoginAt = lastLoginAt;
+        // 同步 status
+        if (user.lockedUntil && Date.now() < new Date(user.lockedUntil).getTime()) {
+            user.status = 'locked';
+        } else if (user.status === 'locked' && (!user.lockedUntil || Date.now() >= new Date(user.lockedUntil).getTime())) {
+            user.status = 'active';
+            user.lockedUntil = null;
+            user.failedLoginCount = 0;
+        }
+        this.saveData();
+        return true;
+    }
+
+    // 创建用户（系统管理员）
+    createUser(user) {
+        if (!user || !user.username || !user.userType) return { success: false, message: '缺少必要字段' };
+        if (this.data.users.some(u => u.username === user.username && u.userType === user.userType)) {
+            return { success: false, message: '同类型下用户名已存在' };
+        }
+        const id = user.id || this.generateId();
+        const salt = user.username;
+        const initialPassword = user.initialPassword || '123456';
+        const passwordHash = this.hashPassword(initialPassword, salt);
+
+        const record = {
+            id,
+            username: user.username,
+            name: user.name || user.username,
+            userType: user.userType,
+            email: user.email || '',
+            phone: user.phone || '',
+            status: user.status || 'active',
+            password: passwordHash,
+            salt: salt,
+            saltVersion: 'username',
+            requirePasswordChange: !!user.requirePasswordChange,
+            failedLoginCount: 0,
+            lockedUntil: null,
+            lastLoginAt: null,
+            ...user.extra
+        };
+
+        this.data.users.push(record);
+        this.saveData();
+        this.addLog(user.createdBy || null, 'user_created', `创建用户: ${record.userType} / ${record.username}`);
+        return { success: true, user: record, initialPassword };
+    }
+
+    // 批量导入学生账号（支持CSV/XLS解析后的rows）
+    importStudents(rows, options = {}) {
+        const defaultPassword = options.defaultPassword || '123456';
+        const requirePasswordChange = (typeof options.requirePasswordChange === 'boolean') ? options.requirePasswordChange : true;
+        const created = [];
+        const failed = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i] || {};
+            const studentNo = String(row.studentNo || row.学号 || row.student_id || row.username || '').trim();
+            const name = String(row.name || row.姓名 || '').trim();
+            const className = String(row.className || row.班级 || '').trim();
+            const email = String(row.email || row.邮箱 || '').trim();
+
+            if (!studentNo || !name || !className) {
+                failed.push({ row: i + 1, reason: '缺少学号/姓名/班级', data: row });
+                continue;
+            }
+
+            // 班级自动匹配（不存在则创建）
+            let cls = this.data.classes.find(c => c.className === className);
+            if (!cls) {
+                cls = {
+                    id: this.generateId(),
+                    className,
+                    departmentId: options.departmentId || (this.data.departments[0] ? this.data.departments[0].id : ''),
+                    grade: options.grade || '',
+                    major: options.major || '',
+                    headTeacher: '',
+                    studentCount: 0
+                };
+                this.data.classes.push(cls);
+            }
+
+            if (this.data.users.some(u => u.username === studentNo && u.userType === 'student')) {
+                failed.push({ row: i + 1, reason: '学号已存在', data: row });
+                continue;
+            }
+
+            const user = {
+                id: this.generateId(),
+                username: studentNo,
+                name,
+                userType: 'student',
+                email: email || `${studentNo}@university.edu.cn`,
+                phone: '',
+                status: 'active',
+                classId: cls.id,
+                grade: options.grade || cls.grade || '',
+                major: options.major || cls.major || '',
+                initialPassword: defaultPassword,
+                requirePasswordChange
+            };
+
+            const result = this.createUser({
+                username: user.username,
+                name: user.name,
+                userType: 'student',
+                email: user.email,
+                phone: user.phone,
+                status: user.status,
+                initialPassword: defaultPassword,
+                requirePasswordChange: requirePasswordChange,
+                createdBy: options.createdBy || null,
+                extra: { classId: user.classId, grade: user.grade, major: user.major }
+            });
+
+            if (result.success) {
+                created.push(result.user);
+                // 更新班级人数
+                cls.studentCount = (cls.studentCount || 0) + 1;
+            } else {
+                failed.push({ row: i + 1, reason: result.message || '创建失败', data: row });
+            }
+        }
+
+        this.saveData();
+        return { created, failed };
     }
 
     // 添加日志
@@ -1283,10 +891,6 @@ class DataManager {
             const student = this.getUserById(enrollment.studentId);
             return {
                 ...student,
-                // 保持向后兼容，同时支持studentId和username
-                studentId: student.id,
-                username: student.username,
-                name: student.name,
                 enrollmentTime: enrollment.enrollmentTime
             };
         }).filter(student => student);
@@ -1300,33 +904,9 @@ class DataManager {
     }
 
     // 获取课程的作业列表
-    getCourseAssignments(courseId, type = null) {
-        let assignments = this.data.assignments.filter(assignment => 
-            assignment.courseId === courseId
-        );
-        
-        // 如果指定了类型，进行过滤
-        if (type) {
-            assignments = assignments.filter(assignment => assignment.type === type);
-        }
-        
-        return assignments;
-    }
-
-    // 获取课程的作业列表（仅作业，不包含考试）
-    getCourseHomework(courseId) {
-        return this.getCourseAssignments(courseId, 'assignment');
-    }
-
-    // 获取课程的考试列表
-    getCourseExams(courseId) {
-        return this.getCourseAssignments(courseId, 'exam');
-    }
-
-    // 获取教师的作业列表
-    getTeacherAssignments(teacherId) {
+    getCourseAssignments(courseId) {
         return this.data.assignments.filter(assignment => 
-            assignment.teacherId === teacherId
+            assignment.courseId === courseId
         );
     }
 
@@ -1491,144 +1071,6 @@ class DataManager {
         stats.draftCourses = this.data.courses.filter(c => c.status === 'draft').length;
         
         return stats;
-    }
-
-    // 更新数据
-    updateData(collection, id, newData) {
-        if (!this.data[collection]) {
-            console.error(`Collection ${collection} not found`);
-            return false;
-        }
-        
-        const index = this.data[collection].findIndex(item => item.id === id);
-        if (index === -1) {
-            console.error(`Item with id ${id} not found in ${collection}`);
-            return false;
-        }
-        
-        // 更新数据，保留原有字段，但不使用值为null或undefined的新字段
-        const filteredNewData = {};
-        for (const key in newData) {
-            if (newData[key] !== null && newData[key] !== undefined) {
-                filteredNewData[key] = newData[key];
-            }
-        }
-        
-        this.data[collection][index] = {
-            ...this.data[collection][index],
-            ...filteredNewData,
-            updatedAt: new Date().toISOString()
-        };
-        
-        this.saveData();
-        return true;
-    }
-
-    // 删除数据
-    deleteData(collection, id) {
-        if (!this.data[collection]) {
-            console.error(`Collection ${collection} not found`);
-            return false;
-        }
-        
-        const index = this.data[collection].findIndex(item => item.id === id);
-        if (index === -1) {
-            console.error(`Item with id ${id} not found in ${collection}`);
-            return false;
-        }
-        
-        this.data[collection].splice(index, 1);
-        this.saveData();
-        return true;
-    }
-
-    // 更新课程学生数（在选课/退选时调用）
-    updateCourseStudentCount(courseId) {
-        const course = this.data.courses.find(c => c.id === courseId);
-        if (!course) return false;
-        
-        const actualCount = this.data.enrollments.filter(enrollment => 
-            enrollment.courseId === courseId && enrollment.status === 'active'
-        ).length;
-        
-        course.currentStudents = actualCount;
-        this.saveData();
-        return true;
-    }
-
-    // 添加选课记录（带数据一致性保证）
-    addEnrollment(enrollment) {
-        if (!this.data.enrollments) {
-            this.data.enrollments = [];
-        }
-        
-        // 验证学生和课程存在
-        const studentExists = this.data.users.some(user => 
-            user.id === enrollment.studentId && user.userType === 'student'
-        );
-        const courseExists = this.data.courses.some(course => 
-            course.id === enrollment.courseId
-        );
-        
-        if (!studentExists) {
-            console.error('学生不存在，无法添加选课记录');
-            return false;
-        }
-        
-        if (!courseExists) {
-            console.error('课程不存在，无法添加选课记录');
-            return false;
-        }
-        
-        // 检查是否已经选课
-        const alreadyEnrolled = this.data.enrollments.some(e => 
-            e.studentId === enrollment.studentId && 
-            e.courseId === enrollment.courseId && 
-            e.status === 'active'
-        );
-        
-        if (alreadyEnrolled) {
-            console.error('学生已经选过这门课程');
-            return false;
-        }
-        
-        this.data.enrollments.push(enrollment);
-        this.updateCourseStudentCount(enrollment.courseId);
-        return true;
-    }
-
-    // 删除选课记录（带数据一致性保证）
-    removeEnrollment(studentId, courseId) {
-        const enrollmentIndex = this.data.enrollments.findIndex(e => 
-            e.studentId === studentId && 
-            e.courseId === courseId && 
-            e.status === 'active'
-        );
-        
-        if (enrollmentIndex === -1) {
-            console.error('未找到选课记录');
-            return false;
-        }
-        
-        this.data.enrollments.splice(enrollmentIndex, 1);
-        this.updateCourseStudentCount(courseId);
-        return true;
-    }
-
-    // 获取课程可用名额
-    getCourseAvailableSlots(courseId) {
-        const course = this.data.courses.find(c => c.id === courseId);
-        if (!course) return 0;
-        
-        return Math.max(0, course.maxStudents - course.currentStudents);
-    }
-
-    // 验证课程是否可选
-    isCourseAvailable(courseId) {
-        const course = this.data.courses.find(c => c.id === courseId);
-        if (!course) return false;
-        
-        return course.status === 'published' && course.currentStudents < course.maxStudents;
     }
 }
 

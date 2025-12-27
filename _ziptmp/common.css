@@ -152,10 +152,6 @@ body {
     justify-content: flex-end;
 }
 
-.modal-footer.centered {
-    justify-content: center;
-}
-
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
